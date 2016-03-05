@@ -12,16 +12,16 @@ class GaugesDialog(QDialog):
 
         self.rpm = DialGauge()
         self.rpm.setMinimum(0)
-        self.rpm.setMaximum(6000)
-        self.rpm.addCriticalRange(4500, 6000)
+        self.rpm.setMaximum(12000)
+        self.rpm.addCriticalRange(10000, 12000)
         self.rpm.setLabel("RPM")
-        for trpm in range(0, 6):
+        for trpm in range(0, 12):
             self.rpm.addGraduation(trpm * 1000, str(trpm), 5, 0.09)
 
-        for trpm in range(0, 6000, 125):
-            self.rpm.addGraduation(trpm, None, 2, 0.03)
+#        for trpm in range(0, 12000, 125):
+#            self.rpm.addGraduation(trpm, None, 2, 0.03)
 
-        for trpm in range(0, 6000, 250):
+        for trpm in range(0, 12000, 500):
             self.rpm.addGraduation(trpm, None, 2, 0.05)
 
         self.manpres = BarGauge()
@@ -87,8 +87,8 @@ gauge_dialog = GaugesDialog()
 gauge_dialog.show()
 gauge_dialog.adjustSize()
 
-connection = SerialTFISource('/dev/cuaU0')
-#connection = FileTFISource('/home/via/minicom2.cap', 0.001)
+#connection = SerialTFISource('/dev/cuaU0')
+connection = FileTFISource('/home/via/minicom3.cap', 0.001)
 tfiparser = Tfi()
 
 def tfi_update():

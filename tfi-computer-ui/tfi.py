@@ -24,24 +24,35 @@ class Tfi(QObject):
             }
 
   def process_packet(self, feedline):
-    m = re.match(Tfi.feed_re, feedline)
-    if m is None:
-      self.status['parse_error'] = True
-      return
+    feedline = str(feedline)
     self.status['parse_error'] = True
+    packet = {}
+
+    if not feedline.startswith("*"):
+        return
+    parts = feedline[2:].rstrip().split(' ')
+    for part in parts:
+        pair = part.split('=')
+        if len(pair) != 2:
+            return
+        packet[str(pair[0])] = str(pair[1])
 
     locker = QMutexLocker(self.lock)
-    self.status.update({
-        "rpm": m.group('rpm'),
-        "sync": True if m.group('sync') else False,
-        "t0_count": m.group('t0_count'),
-        "map": m.group('map'),
-        "advance": m.group('adv'),
-        "dwell": m.group('dwell_us')
-        })
-    locker.unlock()
+    try:
+        self.status.update({
+            "rpm": int(packet['rpm']),
+            "sync": True if packet['sync'] == "1" else False,
+            "t0_count": int(packet['t0_count']),
+            "map": float(packet['map']),
+            "advance": float(packet['adv']),
+            "dwell": int(packet['dwell_us'])
+            })
+    except:
+        return
+    finally:
+        locker.unlock()
+    self.status['parse_error'] = False
     self.feed_update.emit()
-    print "emit"
 
   def get_status(self):
     locker = QMutexLocker(self.lock)
