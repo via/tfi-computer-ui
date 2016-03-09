@@ -3,7 +3,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import Qt
 from tfi import Tfi
 from widgets import DialGauge, BarGauge, Bulb
-from serialsource import SerialTFISource, FileTFISource
+from serialsource import SerialTFISource, FileTFISource, TCPTFISource
 
 class GaugesDialog(QDialog):
     def __init__(self):
@@ -79,7 +79,23 @@ class GaugesDialog(QDialog):
         self.adv.setValue(int(float(stats['advance'])))
         self.syncstatus.setStatus(stats['sync'])
 
+class VarsDialog(QDialog):
+    def __init__(self):
+        super(VarsDialog, self).__init__()
+        table = QTableWidget(self)
+        table.setRowCount(1)
+        table.setRowCount(1)
+        table.setItem(1, 1, QTableWidgetItem("asdf"))
 
+
+#connection = SerialTFISource('/dev/cuaU0')
+#connection = FileTFISource('/home/via/minicom3.cap', 0.001)
+connection = TCPTFISource()
+tfiparser = Tfi()
+
+tfiparser.sendCommand.connect(connection.sendCommand)
+connection.packetArrived.connect(tfiparser.process_packet, Qt.QueuedConnection)
+connection.start()
 
 app = QApplication(sys.argv)
 gauge_dialog = GaugesDialog()
@@ -87,9 +103,10 @@ gauge_dialog = GaugesDialog()
 gauge_dialog.show()
 gauge_dialog.adjustSize()
 
-#connection = SerialTFISource('/dev/cuaU0')
-connection = FileTFISource('/home/via/minicom3.cap', 0.001)
-tfiparser = Tfi()
+vars_dialog = VarsDialog()
+vars_dialog.show()
+vars_dialog.adjustSize()
+
 
 def tfi_update():
     stat = tfiparser.get_status()
@@ -101,8 +118,7 @@ def connUpdate():
     gauge_dialog.updateLinkStatus(connection.connected)
 
 connection.connectionStatusUpdate.connect(connUpdate, Qt.QueuedConnection)
-connection.packetArrived.connect(tfiparser.process_packet, Qt.QueuedConnection)
 tfiparser.feed_update.connect(tfi_update)
-connection.start()
+
 
 sys.exit(app.exec_())

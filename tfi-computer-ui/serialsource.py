@@ -1,5 +1,6 @@
 from PyQt4.QtCore import *
 import serial
+import socket
 import time
 
 class SerialTFISource(QThread):
@@ -44,3 +45,25 @@ class FileTFISource(QThread):
         self.connected = False
         self.connectionStatusUpdate.emit()
 
+class TCPTFISource(QThread):
+    connectionStatusUpdate = pyqtSignal()
+    packetArrived = pyqtSignal(QString)
+
+    def __init__(self, host='localhost', port=1234):
+        super(TCPTFISource, self).__init__()
+        self.connected = False
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect((host, port))
+        self.file = self.socket.makefile()
+
+    def sendCommand(self, line):
+        line = str(line) + "\n"
+        self.socket.send(line)
+
+    def run(self):
+        self.connected = True
+        self.connectionStatusUpdate.emit()
+        for line in self.file:
+            self.packetArrived.emit(line)
+        self.connected = False
+        self.connectionStatusUpdate.emit()
