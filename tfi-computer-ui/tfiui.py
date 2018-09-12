@@ -74,10 +74,10 @@ class GaugesDialog(QDialog):
         self.connstatus.update()
 
     def updateStats(self, stats):
-        self.rpm.setValue(stats['rpm'])
-        self.manpres.setValue(int(float(stats['map'])))
-        self.adv.setValue(int(float(stats['advance'])))
-        self.syncstatus.setStatus(stats['sync'])
+        self.rpm.setValue(int(float(stats['status.rpm'])))
+        self.manpres.setValue(int(float(stats['config.sensors.map.value'])))
+        self.adv.setValue(int(float(stats['status.timing_advance'])))
+        self.syncstatus.setStatus(stats['status.decoder_state'] == "sync")
 
 class VarsDialog(QDialog):
     def __init__(self):
@@ -96,6 +96,7 @@ tfiparser = Tfi()
 tfiparser.sendCommand.connect(connection.sendCommand)
 connection.packetArrived.connect(tfiparser.process_packet, Qt.QueuedConnection)
 connection.start()
+tfiparser.fetch_feed_vars()
 
 app = QApplication(sys.argv)
 gauge_dialog = GaugesDialog()

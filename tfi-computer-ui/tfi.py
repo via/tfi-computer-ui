@@ -16,7 +16,7 @@ class Tfi(QObject):
         self.lock = QMutex()
         self.command_queue = []
         self.fields = []
-        self.status = {}
+        self.status = {
             "rpm": 0,
             "sync": False,
             "t0_count": 0,
@@ -24,6 +24,10 @@ class Tfi(QObject):
             "advance": 0,
             "dwell": 0,
             "parse_error": False }
+
+    def _read_feed_vars(self, line):
+        self.fields = line.split()[1].split(',')
+        print self.fields
 
     def fetch_feed_vars(self):
         self.command_queue.append({
@@ -46,34 +50,25 @@ class Tfi(QObject):
 
     def process_packet(self, feedline):
         feedline = str(feedline)
-        self.status['parse_error'] = True
         packet = {}
 
         if feedline.startswith("* "):
            self._finish_command_response(feedline)
+           return
 
-        parts = feedline[2:].rstrip().split(' ')
-        for part in parts:
-            pair = part.split('=')
-            if len(pair) != 2:
-                return
-            packet[str(pair[0])] = str(pair[1])
+        if len(self.fields) == 0:
+            return
+        parts = feedline[2:].rstrip().split(',')
 
         locker = QMutexLocker(self.lock)
         try:
-            self.status.update({
-                "rpm": int(packet['rpm']),
-                "sync": True if packet['sync'] == "1" else False,
-                "t0_count": int(packet['t0_count']),
-                "map": float(packet['map']),
-                "advance": float(packet['adv']),
-                "dwell": int(packet['dwell_us'])
-                })
+            self.status = dict(zip(self.fields,parts))
+            self.status['parse_error'] = False
         except:
+            self.status['parse_error'] = True
             return
         finally:
             locker.unlock()
-        self.status['parse_error'] = False
         self.feed_update.emit()
 
     def get_status(self):
