@@ -88,7 +88,7 @@ class VarsDialog(QDialog):
         table.setItem(1, 1, QTableWidgetItem("asdf"))
 
 
-#connection = SerialTFISource('/dev/cuaU0')
+#connection = SerialTFISource('/dev/ttyS0')
 #connection = FileTFISource('/home/via/minicom3.cap', 0.001)
 connection = TCPTFISource()
 tfiparser = Tfi()
