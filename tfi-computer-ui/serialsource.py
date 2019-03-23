@@ -1,11 +1,11 @@
-from PyQt4.QtCore import *
+from PySide2.QtCore import *
 import serial
 import socket
 import time
 
 class SerialTFISource(QThread):
-    connectionStatusUpdate = pyqtSignal()
-    packetArrived = pyqtSignal(QString)
+    connectionStatusUpdate = Signal()
+    packetArrived = Signal(str)
 
     def __init__(self, device):
         super(SerialTFISource, self).__init__()
@@ -25,8 +25,8 @@ class SerialTFISource(QThread):
                 self.packetArrived.emit(line)
 
 class FileTFISource(QThread):
-    connectionStatusUpdate = pyqtSignal()
-    packetArrived = pyqtSignal(QString)
+    connectionStatusUpdate = Signal()
+    packetArrived = Signal(str)
 
     def __init__(self, fname, delay=None):
         super(FileTFISource, self).__init__()
@@ -46,8 +46,8 @@ class FileTFISource(QThread):
         self.connectionStatusUpdate.emit()
 
 class TCPTFISource(QThread):
-    connectionStatusUpdate = pyqtSignal()
-    packetArrived = pyqtSignal(QString)
+    connectionStatusUpdate = Signal()
+    packetArrived = Signal(str)
 
     def __init__(self, host='localhost', port=1235):
         super(TCPTFISource, self).__init__()
@@ -58,7 +58,7 @@ class TCPTFISource(QThread):
 
     def sendCommand(self, line):
         line = str(line) + "\n"
-        self.socket.send(line)
+        self.socket.send(bytes(line, encoding='latin1'))
 
     def run(self):
         self.connected = True

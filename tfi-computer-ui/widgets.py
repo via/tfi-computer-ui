@@ -1,12 +1,13 @@
-from PyQt4 import QtGui
-from PyQt4 import QtCore
+from PySide2 import QtGui
+from PySide2 import QtCore
+from PySide2 import QtWidgets
 import math
 
-class Bulb(QtGui.QWidget):
+class Bulb(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(Bulb, self).__init__(parent)
-        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding,
-                QtGui.QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
+                QtWidgets.QSizePolicy.MinimumExpanding)
         self.lit = False
         self.label = None
 
@@ -54,7 +55,7 @@ class Bulb(QtGui.QWidget):
             textpos -=fmetrics.boundingRect(self.label).center()
             qp.drawText(textpos, self.label)
 
-class Gauge(QtGui.QWidget):
+class Gauge(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(Gauge, self).__init__(parent)
         self.value = 0
@@ -63,8 +64,8 @@ class Gauge(QtGui.QWidget):
         self.label = None
         self.crit = []
         self.ticks = []
-        self.setSizePolicy(QtGui.QSizePolicy.Expanding,
-                QtGui.QSizePolicy.Expanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Expanding)
 
     def setValue(self, value):
         self.value = value
@@ -100,8 +101,8 @@ class BarGauge(Gauge):
         super(BarGauge, self).__init__(parent)
         self.start = 0.09
         self.stop = 0.91
-        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding,
-                QtGui.QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
+                QtWidgets.QSizePolicy.MinimumExpanding)
 
     def sizeHint(self):
         return QtCore.QSize(150, 100)
@@ -162,8 +163,11 @@ class BarGauge(Gauge):
         qp.setPen(QtGui.QPen(QtCore.Qt.white, 1))
         qp.setBrush(QtGui.QBrush(QtCore.Qt.white))
         pos = self._barPosition(self.value)
-        qp.drawConvexPolygon(pos, pos + QtCore.QPoint(t_width / 2, -t_height),
-                                  pos + QtCore.QPoint(-t_width / 2, -t_height))
+        poly = QtGui.QPolygon()
+        poly << pos
+        poly << pos + QtCore.QPoint(t_width / 2, -t_height)
+        poly << pos + QtCore.QPoint(-t_width / 2, -t_height)
+        qp.drawConvexPolygon(poly)
 
         # Label
         if self.label:
@@ -193,8 +197,8 @@ class DialGauge(Gauge):
         super(DialGauge, self).__init__(parent)
         self.start_angle = 210
         self.stop_angle = -30
-        self.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding,
-                QtGui.QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding,
+                QtWidgets.QSizePolicy.MinimumExpanding)
 
     def sizeHint(self):
         return QtCore.QSize(150, 200)

@@ -1,6 +1,7 @@
 import sys
-from PyQt4.QtGui import *
-from PyQt4.QtCore import Qt
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+from PySide2.QtCore import Qt
 from tfi import Tfi
 from widgets import DialGauge, BarGauge, Bulb
 from serialsource import SerialTFISource, FileTFISource, TCPTFISource
@@ -116,7 +117,7 @@ def tfi_update():
     gauge_dialog.update()
 
 def connUpdate():
-    print "Connection updated: ", connection.connected
+    print("Connection updated: ", connection.connected)
     gauge_dialog.updateLinkStatus(connection.connected)
 
 connection.connectionStatusUpdate.connect(connUpdate, Qt.QueuedConnection)

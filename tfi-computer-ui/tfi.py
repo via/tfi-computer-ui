@@ -2,14 +2,14 @@ import serial
 import copy
 import re
 import time
-from PyQt4.QtCore import QObject, pyqtSignal, QThread, QMutex, QMutexLocker, QString
+from PySide2.QtCore import QObject, Signal, QThread, QMutex, QMutexLocker
 
 class Tfi(QObject):
 
     feed_re = r"\* rpm=(?P<rpm>\d+) sync=(?P<sync>\d+) t0_count=(?P<t0_count>\d+)" +\
               r" map=(?P<map>[\d\.]+) adv=(?P<adv>[\d\.]+) dwell_us=(?P<dwell_us>\d+).*"
-    feed_update = pyqtSignal()
-    sendCommand = pyqtSignal(QString)
+    feed_update = Signal()
+    sendCommand = Signal(str)
 
     def __init__(self):
         super(Tfi, self).__init__()
@@ -27,7 +27,7 @@ class Tfi(QObject):
 
     def _read_feed_vars(self, line):
         self.fields = line.split()[1].split(',')
-        print self.fields
+        print(self.fields)
 
     def fetch_feed_vars(self):
         self.command_queue.append({
