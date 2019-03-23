@@ -49,7 +49,7 @@ class TCPTFISource(QThread):
     connectionStatusUpdate = pyqtSignal()
     packetArrived = pyqtSignal(QString)
 
-    def __init__(self, host='localhost', port=1234):
+    def __init__(self, host='localhost', port=1235):
         super(TCPTFISource, self).__init__()
         self.connected = False
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

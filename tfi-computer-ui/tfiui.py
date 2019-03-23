@@ -12,16 +12,16 @@ class GaugesDialog(QDialog):
 
         self.rpm = DialGauge()
         self.rpm.setMinimum(0)
-        self.rpm.setMaximum(12000)
-        self.rpm.addCriticalRange(10000, 12000)
+        self.rpm.setMaximum(9000)
+        self.rpm.addCriticalRange(6000, 9000)
         self.rpm.setLabel("RPM")
-        for trpm in range(0, 12):
+        for trpm in range(0, 9):
             self.rpm.addGraduation(trpm * 1000, str(trpm), 5, 0.09)
 
-#        for trpm in range(0, 12000, 125):
-#            self.rpm.addGraduation(trpm, None, 2, 0.03)
+        for trpm in range(0, 9000, 125):
+            self.rpm.addGraduation(trpm, None, 2, 0.03)
 
-        for trpm in range(0, 12000, 500):
+        for trpm in range(0, 9000, 500):
             self.rpm.addGraduation(trpm, None, 2, 0.05)
 
         self.manpres = BarGauge()
@@ -42,11 +42,11 @@ class GaugesDialog(QDialog):
         self.adv.addGraduation(45, str(45), 2, 0.1)
 
         self.iat = BarGauge()
-        self.iat.setMinimum(-20)
-        self.iat.setMaximum(60)
-        self.iat.setLabel("AIR TEMP")
-        self.iat.addCriticalRange(30, 60)
-        for deg in range(-20, 61, 20):
+        self.iat.setMinimum(0.5)
+        self.iat.setMaximum(1.5)
+        self.iat.setLabel("EGO")
+        self.iat.addCriticalRange(1.1, 1.5)
+        for deg in [.6, .8,  1.0 , 1.2, 1.4]:
             self.iat.addGraduation(deg, str(deg), 2, 0.1)
 
         self.connstatus = Bulb()
@@ -75,9 +75,10 @@ class GaugesDialog(QDialog):
 
     def updateStats(self, stats):
         self.rpm.setValue(int(float(stats['status.rpm'])))
-        self.manpres.setValue(int(float(stats['config.sensors.map.value'])))
+        self.manpres.setValue(int(float(stats['status.sensors.map'])))
         self.adv.setValue(int(float(stats['status.timing_advance'])))
-        self.syncstatus.setStatus(stats['status.decoder_state'] == "sync")
+        self.iat.setValue(float(stats['status.sensors.ego']))
+        self.syncstatus.setStatus(stats['status.decoder_state'] == "full")
 
 class VarsDialog(QDialog):
     def __init__(self):
