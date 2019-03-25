@@ -1,69 +1,38 @@
-from PySide2.QtCore import *
-import serial
+from PySide2.QtCore import QThread
 import socket
-import time
 
-class SerialTFISource(QThread):
-    connectionStatusUpdate = Signal()
-    packetArrived = Signal(str)
-
-    def __init__(self, device):
-        super(SerialTFISource, self).__init__()
-        self.serial = serial.Serial(device,  115200, timeout=1)
-        self.connected = False
-
-    def run(self):
-        while self.isRunning():
-            line = self.serial.readline()
-            if not line and self.connected:
-                self.connected = False
-                self.connectionStatusUpdate.emit()
-            if line:
-                if not self.connected:
-                    self.connected = True
-                    self.connectionStatusUpdate.emit()
-                self.packetArrived.emit(line)
-
-class FileTFISource(QThread):
-    connectionStatusUpdate = Signal()
-    packetArrived = Signal(str)
-
-    def __init__(self, fname, delay=None):
-        super(FileTFISource, self).__init__()
-        self.connected = False
-        self.delay = delay
-        self.fname = fname
-
-    def run(self):
-        with open(self.fname) as f: 
-            self.connected = True
-            self.connectionStatusUpdate.emit()
-            for line in f:
-                self.packetArrived.emit(line)
-                if self.delay:
-                    time.sleep(self.delay)
-        self.connected = False
-        self.connectionStatusUpdate.emit()
-
-class TCPTFISource(QThread):
-    connectionStatusUpdate = Signal()
-    packetArrived = Signal(str)
-
-    def __init__(self, host='localhost', port=1235):
-        super(TCPTFISource, self).__init__()
-        self.connected = False
+class TCPTarget(QThread):
+    def __init__(self, host='localhost', port=1235,
+            packet_callback=None, status_callback=None):
+        super(TCPTarget, self).__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
-        self.file = self.socket.makefile()
+        self.connected = True
+        self.file = self.socket.makefile(encoding='latin1',
+                buffering=1)
+        self.set_packet_callback(packet_callback)
+        self.set_status_callback(status_callback)
 
-    def sendCommand(self, line):
+    def set_packet_callback(self, cb):
+        self.packet_callback = cb
+
+    def set_status_callback(self, cb):
+        self.status_callback = cb
+        if cb:
+            self.status_callback(self.connected)
+
+    def send_command(self, line):
         line = str(line) + "\n"
         self.socket.send(bytes(line, encoding='latin1'))
 
     def run(self):
-        self.connected = True
-        self.connectionStatusUpdate.emit()
+        if self.status_callback:
+            self.status_callback(self.connected)
+
         for line in self.file:
-            self.packetArrived.emit(line)
+            if self.packet_callback:
+                self.packet_callback(line)
+
         self.connected = False
-        self.connectionStatusUpdate.emit()
+        if self.status_callback:
+            self.status_callback(self.connected)

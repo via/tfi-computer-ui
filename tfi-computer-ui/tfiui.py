@@ -2,9 +2,10 @@ import sys
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 from PySide2.QtCore import Qt
-from tfi import Tfi
+from viaems.parser import Parser
+from viaems.model import Model
 from widgets import DialGauge, BarGauge, Bulb
-from serialsource import SerialTFISource, FileTFISource, TCPTFISource
+from serialsource import TCPTarget
 
 class GaugesDialog(QDialog):
     def __init__(self):
@@ -75,30 +76,28 @@ class GaugesDialog(QDialog):
         self.connstatus.update()
 
     def updateStats(self, stats):
-        self.rpm.setValue(int(float(stats['status.rpm'])))
-        self.manpres.setValue(int(float(stats['status.sensors.map'])))
-        self.adv.setValue(int(float(stats['status.timing_advance'])))
-        self.iat.setValue(float(stats['status.sensors.ego']))
-        self.syncstatus.setStatus(stats['status.decoder_state'] == "full")
 
-class VarsDialog(QDialog):
-    def __init__(self):
-        super(VarsDialog, self).__init__()
-        table = QTableWidget(self)
-        table.setRowCount(1)
-        table.setRowCount(1)
-        table.setItem(1, 1, QTableWidgetItem("asdf"))
+        if 'status.rpm' in stats:
+            self.rpm.setValue(int(float(stats['status.rpm'].value())))
+        if 'status.sensors.map' in stats:
+            self.manpres.setValue(int(float(stats['status.sensors.map'].value())))
+        if 'status.timing_advance' in stats:
+            self.adv.setValue(int(float(stats['status.timing_advance'].value())))
+        if 'status.sensors.ego' in stats:
+            self.iat.setValue(float(stats['status.sensors.ego'].value()))
+        if 'status.decoder_state' in stats:
+            self.syncstatus.setStatus(stats['status.decoder_state'].value() == "full")
+            
+
+#class VarsDialog(QDialog):
+#    def __init__(self):
+#        super(VarsDialog, self).__init__()
+#        table = QTableWidget(self)
+#        table.setRowCount(1)
+#        table.setRowCount(1)
+#        table.setItem(1, 1, QTableWidgetItem("asdf"))
 
 
-#connection = SerialTFISource('/dev/ttyS0')
-#connection = FileTFISource('/home/via/minicom3.cap', 0.001)
-connection = TCPTFISource()
-tfiparser = Tfi()
-
-tfiparser.sendCommand.connect(connection.sendCommand)
-connection.packetArrived.connect(tfiparser.process_packet, Qt.QueuedConnection)
-connection.start()
-tfiparser.fetch_feed_vars()
 
 app = QApplication(sys.argv)
 gauge_dialog = GaugesDialog()
@@ -106,22 +105,21 @@ gauge_dialog = GaugesDialog()
 gauge_dialog.show()
 gauge_dialog.adjustSize()
 
-vars_dialog = VarsDialog()
-vars_dialog.show()
-vars_dialog.adjustSize()
-
-
-def tfi_update():
-    stat = tfiparser.get_status()
-    gauge_dialog.updateStats(stat)
-    gauge_dialog.update()
 
 def connUpdate():
     print("Connection updated: ", connection.connected)
     gauge_dialog.updateLinkStatus(connection.connected)
 
-connection.connectionStatusUpdate.connect(connUpdate, Qt.QueuedConnection)
-tfiparser.feed_update.connect(tfi_update)
+def update_cb(model):
+    gauge_dialog.updateStats(model.nodes)
+    gauge_dialog.update()
+
+
+target = TCPTarget()
+target.start()
+
+model = Model(target, update_cb=update_cb)
+model.start_interrogation()
 
 
 sys.exit(app.exec_())
