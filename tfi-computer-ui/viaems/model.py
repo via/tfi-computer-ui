@@ -16,11 +16,18 @@ class Node():
     def refresh(self):
         self.model.parser.get(self._refresh_cb, self.name)
 
+    def set_auto_refresh(self, val):
+        self.model.set_auto_refresh(self.name, val)
+        self.auto_refresh = val
+
     def value(self):
         return self.val
 
     def set(self, newvalue):
         pass
+
+class StatusNode(Node):
+    pass
 
 class TableNode(Node):
 
@@ -28,7 +35,6 @@ class TableNode(Node):
         def refresh_point(val):
             if not self.table["values"][row]:
                 self.table["values"][row] = []
-            print(val)
             self.table["values"][row] = [float(x) for x in val]
             if row == self.table["rows"] - 1:
                # We've finished syncing
@@ -39,7 +45,6 @@ class TableNode(Node):
 
     def _refresh_single_axis(self):
         def refresh_point(val):
-            print(val)
             self.table["values"] = [float(x) for x in val]
             self.last_refresh = time.time()
         points = ["[{}]".format(row) 
@@ -49,7 +54,6 @@ class TableNode(Node):
     def _refresh_info(self, val):
         if not isinstance(val, dict):
             return
-        print(val)
         val.update({
             "rowlabels": val["rowlabels"][1:-1].split(","),
             "collabels": val["rowlabels"][1:-1].split(","),
@@ -73,10 +77,11 @@ class TableNode(Node):
 
 class Model():
     
-    def __init__(self, target, update_cb=None):
+    def __init__(self, target, update_cb=None, interrogate_cb=None):
         self.target = target
         self.parser = Parser(target, self._new_data)
         self.update_cb = update_cb
+        self.interrogate_cb = interrogate_cb
 
         self.nodes = {}
 
@@ -86,7 +91,7 @@ class Model():
     def _handle_listing(self, resp):
         for node in resp:
             if node.startswith("status."):
-                n = Node(node, model=self)
+                n = StatusNode(node, model=self)
                 self.nodes[node] = n
                 if node in self.parser.feed_fields:
                     n.auto_refresh = True
@@ -95,6 +100,15 @@ class Model():
                 n = TableNode(node, model=self)
                 self.nodes[node] = n
                 n.refresh()
+        self.interrogate_cb()
+
+    def set_auto_refresh(self, node, enabled):
+        current = self.parser.feed_fields
+        if node in current and not enabled:
+            current.remove(node)
+        elif node not in current and enabled:
+            current.append(node)
+        self.parser.set(None, "config.feed", ",".join(current))
 
     def _new_data(self, data):
         for field in data:

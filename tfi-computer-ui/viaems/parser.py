@@ -22,11 +22,12 @@ class Parser():
 
     def set(self, cb, node, args=[]):
         cmd = "set {}".format(node)
-        for arg in args:
-            if isinstance(args, dict):
-                cmd += " {}={}".format(arg, args[arg])
-            else:
-                cmd += " {}".format(arg)
+        if isinstance(args, list):
+            cmd += " " + " ".join(args)
+        elif isinstance(args, dict):
+            cmd + " " + " ".join(["{}={}".format(arg, args[arg]) for arg in args])
+        else: 
+            cmd += " {}".format(args)
         self._send_request(cmd, cb)
 
         # Special case, we want to know if we're changing the config feed
@@ -49,7 +50,7 @@ class Parser():
             self.target.send_command(self.command_queue[0]["command"])
 
     def _finish_command_response(self, line, success=True):
-        line = self._parse_response(line)
+        line = self._parse_response(line.rstrip())
 
         if self.command_queue[0]["callback"]:
             self.command_queue[0]["callback"](line if success else None)
@@ -62,6 +63,8 @@ class Parser():
 
     def _parse_response(self, response):
         parts = response.split()
+        if not len(parts):
+            return response
         # Handle K/V pairs
         if "=" in parts[0]:
             resp = {}
@@ -91,7 +94,7 @@ class Parser():
             return
 
         self.logfile.write(line)
-        parts = line[2:].rstrip().split(',')
+        parts = line.rstrip().split(',')
 
         try:
             self.status = dict(zip(self.feed_fields, parts))

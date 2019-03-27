@@ -6,6 +6,7 @@ from viaems.parser import Parser
 from viaems.model import Model
 from widgets import DialGauge, BarGauge, Bulb
 from serialsource import TCPTarget
+from windows import MainWindow
 
 class GaugesDialog(QDialog):
     def __init__(self):
@@ -89,16 +90,6 @@ class GaugesDialog(QDialog):
             self.syncstatus.setStatus(stats['status.decoder_state'].value() == "full")
             
 
-#class VarsDialog(QDialog):
-#    def __init__(self):
-#        super(VarsDialog, self).__init__()
-#        table = QTableWidget(self)
-#        table.setRowCount(1)
-#        table.setRowCount(1)
-#        table.setItem(1, 1, QTableWidgetItem("asdf"))
-
-
-
 app = QApplication(sys.argv)
 gauge_dialog = GaugesDialog()
 
@@ -106,20 +97,31 @@ gauge_dialog.show()
 gauge_dialog.adjustSize()
 
 
-def connUpdate():
-    print("Connection updated: ", connection.connected)
-    gauge_dialog.updateLinkStatus(connection.connected)
+class TfiUI():
+    def connUpdate(self):
+        print("Connection updated: ", connection.connected)
+        gauge_dialog.updateLinkStatus(connection.connected)
+    
+    def update_cb(self, model):
+        gauge_dialog.updateStats(model.nodes)
+        gauge_dialog.update()
 
-def update_cb(model):
-    gauge_dialog.updateStats(model.nodes)
-    gauge_dialog.update()
+        self.main_window.status_updates()
+
+    def interrogate_cb(self):
+        self.main_window.interrogation_completed()
 
 
-target = TCPTarget()
-target.start()
+    def __init__(self):
+        target = TCPTarget()
+        target.start()
+        
+        self.model = Model(target, update_cb=self.update_cb, interrogate_cb=self.interrogate_cb)
+        
+        self.main_window = MainWindow(self.model)
+        self.main_window.show()
+        
+        self.model.start_interrogation()
 
-model = Model(target, update_cb=update_cb)
-model.start_interrogation()
-
-
+tfi = TfiUI()
 sys.exit(app.exec_())
