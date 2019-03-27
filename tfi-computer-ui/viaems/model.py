@@ -111,9 +111,11 @@ class Model():
         self.parser.set(None, "config.feed", ",".join(current))
 
     def _new_data(self, data):
+        updated_nodes = []
         for field in data:
             if field in self.nodes:
+                updated_nodes.append(field)
                 self.nodes[field].val = data[field]
         if self.update_cb:
-            self.update_cb(self)
+            self.update_cb(updated_nodes)
 
