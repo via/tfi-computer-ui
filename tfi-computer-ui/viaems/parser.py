@@ -28,11 +28,15 @@ class Parser():
             cmd + " " + " ".join(["{}={}".format(arg, args[arg]) for arg in args])
         else: 
             cmd += " {}".format(args)
-        self._send_request(cmd, cb)
-
-        # Special case, we want to know if we're changing the config feed
         if node == "config.feed":
-            self.get(self._read_feed_vars, "config.feed")
+            # Special case, we want to know if we're changing the config feed
+            def wrapped(line):
+                self._read_feed_vars(args)
+                if cb:
+                    cb(line)
+            self._send_request(cmd, wrapped)
+        else:
+            self._send_request(cmd, cb)
 
     def _read_feed_vars(self, line):
         if line is None:
