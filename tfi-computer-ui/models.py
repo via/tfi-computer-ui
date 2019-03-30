@@ -117,16 +117,46 @@ class TableEditorModel(QtCore.QAbstractTableModel):
         if parent is None or self.node is None:
             return 0
 
-        return self.node.val["rows"]
+        if self.node.naxis == 1:
+            return 1
+
+        return self.node.rows
 
     def columnCount(self, parent):
         if parent is None or self.node is None:
             return 0
 
-        return self.node.val["cols"]
+        if self.node.naxis == 2:
+            return self.node.cols
+        else:
+            return self.node.rows
 
     def data(self, index, role):
         if self.node is None:
             return
         if role == QtCore.Qt.DisplayRole:
-            return self.node.val["values"][index.row()][index.column()]
+            if self.node.naxis == 2:
+                return self.node.table[index.row()][index.column()]
+            else:
+                return self.node.table[index.column()]
+
+    def headerData(self, i, orientation, role):
+        if role != QtCore.Qt.DisplayRole: 
+            return
+        if self.node.naxis == 2:
+            if orientation == QtCore.Qt.Horizontal:
+                return self.node.row_labels[i]
+            else:
+                return self.node.col_labels[i]
+        else:
+            if orientation == QtCore.Qt.Horizontal:
+                return self.node.row_labels[i]
+
+    def flags(self, index):
+        flags = super(TableEditorModel, self).flags(index)
+        flags = flags | QtCore.Qt.ItemIsEditable
+        return flags
+
+    def setData(self, index, value, role):
+        self.node.set_point(index.row(), index.column(), value)
+        return True

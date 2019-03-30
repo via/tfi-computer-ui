@@ -33,41 +33,48 @@ class TableNode(Node):
 
     def _refresh_row(self, row):
         def refresh_point(val):
-            if not self.table["values"][row]:
-                self.table["values"][row] = []
-            self.table["values"][row] = [float(x) for x in val]
-            if row == self.table["rows"] - 1:
+            if not self.table[row]:
+                self.table[row] = []
+            self.table[row] = [float(x) for x in val]
+            if row == self.rows - 1:
                # We've finished syncing
                self.last_refresh = time.time()
         cols = ["[{}][{}]".format(row, col) 
-                for col in range(self.table["cols"])]
+                for col in range(self.cols)]
         self.model.parser.get(refresh_point, self.name, cols)
 
     def _refresh_single_axis(self):
         def refresh_point(val):
-            self.table["values"] = [float(x) for x in val]
+            self.table = [float(x) for x in val]
             self.last_refresh = time.time()
         points = ["[{}]".format(row) 
-                for row in range(self.table["rows"])]
+                for row in range(self.rows)]
         self.model.parser.get(refresh_point, self.name, points)
+
+    def set_point(self, row, col, val):
+        pos = None
+        if self.naxis == 2:
+            pos = "[{}][{}]".format(row, col)
+            self.table[row][col] = val
+        else:
+            pos = "[{}]".format(col)
+            self.table[col] = val
+        self.model.parser.set(None, self.name, {pos: val})
 
     def _refresh_info(self, val):
         if not isinstance(val, dict):
             return
-        val.update({
-            "rowlabels": val["rowlabels"][1:-1].split(","),
-            "collabels": val["rowlabels"][1:-1].split(","),
-            "rows": int(val["rows"]),
-            "cols": int(val["cols"]),
-            "naxis": int(val["naxis"]),
-            })
-        self.table = val
-        self.table["values"] = [None] * self.table["rows"]
-        for r in range(self.table["rows"]):
-            self.table["values"][r] = [0.0] * self.table["cols"]
+        self.row_labels = val["rowlabels"][1:-1].split(",")
+        self.col_labels = val["collabels"][1:-1].split(",")
+        self.rows = int(val["rows"])
+        self.cols = int(val["cols"])
+        self.naxis = int(val["naxis"])
+        self.table = [None] * self.rows
+        for r in range(self.rows):
+            self.table[r] = [0.0] * self.cols
 
-        if self.table["naxis"] == 2:
-            for row in range(self.table["rows"]):
+        if self.naxis == 2:
+            for row in range(self.rows):
                 self._refresh_row(row)
         else:
             self._refresh_single_axis()
@@ -109,6 +116,11 @@ class Model():
         elif node not in current and enabled:
             current.append(node)
         self.parser.set(None, "config.feed", ",".join(current))
+
+    def get_node(self, nodename):
+        for name, node in self.nodes.items():
+            if nodename == name:
+                return node
 
     def _new_data(self, data):
         updated_nodes = []

@@ -25,7 +25,7 @@ class Parser():
         if isinstance(args, list):
             cmd += " " + " ".join(args)
         elif isinstance(args, dict):
-            cmd + " " + " ".join(["{}={}".format(arg, args[arg]) for arg in args])
+            cmd += " " + " ".join(["{}={}".format(arg, args[arg]) for arg in args])
         else: 
             cmd += " {}".format(args)
         if node == "config.feed":
