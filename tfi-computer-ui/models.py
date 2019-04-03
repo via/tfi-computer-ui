@@ -1,6 +1,6 @@
-from PySide2 import QtWidgets
 from PySide2 import QtCore
 from viaems.model import *
+
 
 class StatusModel(QtCore.QAbstractTableModel):
     def __init__(self):
@@ -141,7 +141,7 @@ class TableEditorModel(QtCore.QAbstractTableModel):
                 return self.node.table[index.column()]
 
     def headerData(self, i, orientation, role):
-        if role != QtCore.Qt.DisplayRole: 
+        if role != QtCore.Qt.DisplayRole:
             return
         if self.node.naxis == 2:
             if orientation == QtCore.Qt.Horizontal:

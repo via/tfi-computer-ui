@@ -2,6 +2,7 @@ import time
 
 from viaems.parser import Parser
 
+
 class Node():
     def __init__(self, name, model):
         self.name = name
@@ -26,8 +27,10 @@ class Node():
     def set(self, newvalue):
         pass
 
+
 class StatusNode(Node):
     pass
+
 
 class TableNode(Node):
 
@@ -37,9 +40,9 @@ class TableNode(Node):
                 self.table[row] = []
             self.table[row] = [float(x) for x in val]
             if row == self.rows - 1:
-               # We've finished syncing
-               self.last_refresh = time.time()
-        cols = ["[{}][{}]".format(row, col) 
+                # We've finished syncing
+                self.last_refresh = time.time()
+        cols = ["[{}][{}]".format(row, col)
                 for col in range(self.cols)]
         self.model.parser.get(refresh_point, self.name, cols)
 
@@ -47,8 +50,8 @@ class TableNode(Node):
         def refresh_point(val):
             self.table = [float(x) for x in val]
             self.last_refresh = time.time()
-        points = ["[{}]".format(row) 
-                for row in range(self.rows)]
+        points = ["[{}]".format(row)
+                  for row in range(self.rows)]
         self.model.parser.get(refresh_point, self.name, points)
 
     def set_point(self, row, col, val):
@@ -78,12 +81,12 @@ class TableNode(Node):
                 self._refresh_row(row)
         else:
             self._refresh_single_axis()
-                    
+
     def refresh(self):
         self.model.parser.get(self._refresh_info, self.name)
 
 class Model():
-    
+
     def __init__(self, target, update_cb=None, interrogate_cb=None):
         self.target = target
         self.parser = Parser(target, self._new_data)
@@ -110,7 +113,7 @@ class Model():
         self.interrogate_cb()
 
     def set_auto_refresh(self, node, enabled):
-        current = self.parser.feed_fields
+        current = self.parser.feed_fields.copy()
         if node in current and not enabled:
             current.remove(node)
         elif node not in current and enabled:
@@ -124,6 +127,7 @@ class Model():
 
     def _new_data(self, data):
         updated_nodes = []
+        print(data)
         for field in data:
             if field in self.nodes:
                 updated_nodes.append(field)

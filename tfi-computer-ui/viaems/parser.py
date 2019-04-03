@@ -25,8 +25,9 @@ class Parser():
         if isinstance(args, list):
             cmd += " " + " ".join(args)
         elif isinstance(args, dict):
-            cmd += " " + " ".join(["{}={}".format(arg, args[arg]) for arg in args])
-        else: 
+            cmd += " " + " ".join(["{}={}".format(
+                arg, args[arg]) for arg in args])
+        else:
             cmd += " {}".format(args)
         if node == "config.feed":
             # Special case, we want to know if we're changing the config feed
@@ -76,7 +77,7 @@ class Parser():
                 k, v = part.split('=')
                 resp[k] = v
             return resp
-        
+
         if len(parts) > 1:
             return parts
 
@@ -84,7 +85,6 @@ class Parser():
 
     def _packet_callback(self, line):
         line = str(line)
-        packet = {}
 
         if line.startswith("* "):
             self._finish_command_response(line[2:], success=True)

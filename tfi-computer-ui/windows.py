@@ -1,11 +1,12 @@
 from PySide2 import QtWidgets, QtGui
-from PySide2.QtCore import Qt, QSize, Signal
+from PySide2.QtCore import Qt, Signal
 from PySide2.QtCharts import QtCharts
 
 from models import StatusModel, TableModel, TableEditorModel
 from widgets import DialGauge, BarGauge, Bulb
 
 import time
+
 
 class MainWindow(QtWidgets.QMainWindow):
     closed = Signal()
@@ -66,8 +67,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def select_table(self, index):
         if index is None:
             return
+
         node = self.table_model.nodes[index.row()]
-        print(node)
         self.table_editor_model.setNode(node)
 
         self.table_editor.resizeColumnsToContents()
@@ -83,6 +84,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()
+
 
 class LogViewDialog(QtWidgets.QDialog):
     def __init__(self):
@@ -103,8 +105,7 @@ class LogViewDialog(QtWidgets.QDialog):
 
     def add_data(self, time, value):
         self.rpm_series.append(time, value)
-        self.chart.axisX().setRange(time - 1000000, time)
-
+        self.chart.axisX().setRange(time - 200000, time)
 
 
 class GaugesDialog(QtWidgets.QDialog):
@@ -138,18 +139,17 @@ class GaugesDialog(QtWidgets.QDialog):
         self.adv.setMinimum(0)
         self.adv.setMaximum(45)
         self.adv.setLabel("ADVANCE")
-        self.adv.addCriticalRange(40, 45)
-        for deg in range(0, 46, 10):
+        self.adv.addCriticalRange(40, 50)
+        for deg in range(0, 50, 10):
             self.adv.addGraduation(deg, str(deg), 2, 0.1)
-        self.adv.addGraduation(45, str(45), 2, 0.1)
 
-        self.iat = BarGauge()
-        self.iat.setMinimum(0.5)
-        self.iat.setMaximum(1.5)
-        self.iat.setLabel("EGO")
-        self.iat.addCriticalRange(1.1, 1.5)
-        for deg in [.6, .8,  1.0 , 1.2, 1.4]:
-            self.iat.addGraduation(deg, str(deg), 2, 0.1)
+        self.ego = BarGauge()
+        self.ego.setMinimum(0.5)
+        self.ego.setMaximum(1.5)
+        self.ego.setLabel("EGO")
+        self.ego.addCriticalRange(1.1, 1.5)
+        for deg in [.6, .8, 1.0, 1.2, 1.4]:
+            self.ego.addGraduation(deg, str(deg), 2, 0.1)
 
         self.connstatus = Bulb()
         self.connstatus.setLabel("LINK")
@@ -162,7 +162,7 @@ class GaugesDialog(QtWidgets.QDialog):
         self.layout.setRowMinimumHeight(2, 10)
         self.layout.addWidget(self.adv, 3, 0, 1, 2)
         self.layout.setRowMinimumHeight(4, 10)
-        self.layout.addWidget(self.iat, 5, 0, 1, 2)
+        self.layout.addWidget(self.ego, 5, 0, 1, 2)
         self.layout.addWidget(self.connstatus, 6, 0)
         self.layout.addWidget(self.syncstatus, 6, 1)
 
@@ -171,22 +171,40 @@ class GaugesDialog(QtWidgets.QDialog):
         self.setPalette(pal)
         self.setAutoFillBackground(True)
 
+        self.gauge_update_funcs = {
+            'status.rpm': lambda x: self._update_gauge_float(
+                self.rpm, x),
+            'status.sensors.map': lambda x: self._update_gauge_float(
+                self.manpres, x),
+            'status.sensors.ego': lambda x: self._update_gauge_float(
+                self.ego, x),
+            'status.timing_advance': lambda x: self._update_gauge_float(
+                self.adv, x),
+            'status.decoder_state': lambda x: self._update_gauge_bulb(
+                self.syncstatus, "full", x),
+        }
+
+    def _update_gauge_float(self, gauge, value):
+        try:
+            v = value.value()
+            v = float(v)
+            gauge.setValue(v)
+        except ValueError as e:
+            print(e)
+
+    def _update_gauge_bulb(self, gauge, on_value, value):
+        try:
+            v = value.value()
+            gauge.setStatus(v == on_value)
+        except ValueError as e:
+            print(e)
+
     def updateLinkStatus(self, up):
         self.connstatus.setStatus(up)
         self.connstatus.update()
 
     def updateStats(self, stats):
-        try:
-            if 'status.rpm' in stats:
-                self.rpm.setValue(int(float(stats['status.rpm'].value())))
-            if 'status.sensors.map' in stats:
-                self.manpres.setValue(int(float(stats['status.sensors.map'].value())))
-            if 'status.timing_advance' in stats:
-                self.adv.setValue(int(float(stats['status.timing_advance'].value())))
-            if 'status.sensors.ego' in stats:
-                self.iat.setValue(float(stats['status.sensors.ego'].value()))
-            if 'status.decoder_state' in stats:
-                self.syncstatus.setStatus(stats['status.decoder_state'].value() == "full")
-        except:
-            return
-            
+        for node_name, mapper in self.gauge_update_funcs.items():
+            if node_name in stats:
+                mapper(stats[node_name])
+

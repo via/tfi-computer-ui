@@ -1,7 +1,10 @@
-from PySide2.QtCore import QThread
+from PySide2.QtCore import QThread, Signal
 import socket
 
 class TCPTarget(QThread):
+    packet_update = Signal(str)
+    status_update = Signal(bool)
+
     def __init__(self, host='localhost', port=1235,
             packet_callback=None, status_callback=None):
         super(TCPTarget, self).__init__()
@@ -14,25 +17,22 @@ class TCPTarget(QThread):
         self.set_status_callback(status_callback)
 
     def set_packet_callback(self, cb):
-        self.packet_callback = cb
+        self.packet_update.connect(cb)
 
     def set_status_callback(self, cb):
-        self.status_callback = cb
         if cb:
-            self.status_callback(self.connected)
+            self.status_update.connect(cb)
+        self.status_update.emit(self.connected)
 
     def send_command(self, line):
         line = str(line) + "\n"
         self.socket.send(bytes(line, encoding='latin1'))
 
     def run(self):
-        if self.status_callback:
-            self.status_callback(self.connected)
+        self.status_update.emit(self.connected)
 
         for line in self.file:
-            if self.packet_callback:
-                self.packet_callback(line)
+            self.packet_update.emit(line)
 
         self.connected = False
-        if self.status_callback:
-            self.status_callback(self.connected)
+        self.status_update.emit(self.connected)
