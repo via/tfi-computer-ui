@@ -36,6 +36,7 @@ class TableNode(Node):
 
     def _refresh_row(self, row):
         def refresh_point(val):
+            print(val)
             if not self.table[row]:
                 self.table[row] = []
             self.table[row] = [float(x) for x in val]
@@ -127,7 +128,7 @@ class Model():
 
     def _new_data(self, data):
         updated_nodes = []
-        print(data)
+        #print(data)
         for field in data:
             if field in self.nodes:
                 updated_nodes.append(field)

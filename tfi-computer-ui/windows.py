@@ -172,15 +172,15 @@ class GaugesDialog(QtWidgets.QDialog):
         self.setAutoFillBackground(True)
 
         self.gauge_update_funcs = {
-            'status.rpm': lambda x: self._update_gauge_float(
+            'status.decoder.rpm': lambda x: self._update_gauge_float(
                 self.rpm, x),
             'status.sensors.map': lambda x: self._update_gauge_float(
                 self.manpres, x),
             'status.sensors.ego': lambda x: self._update_gauge_float(
                 self.ego, x),
-            'status.timing_advance': lambda x: self._update_gauge_float(
+            'status.ignition.timing_advance': lambda x: self._update_gauge_float(
                 self.adv, x),
-            'status.decoder_state': lambda x: self._update_gauge_bulb(
+            'status.decoder.state': lambda x: self._update_gauge_bulb(
                 self.syncstatus, "full", x),
         }
 

@@ -17,10 +17,10 @@ class TfiUI():
 
         self.main_window.status_updates(nodes)
 
-        curtime = self.model.get_node('status.current_time')
-        rpm = self.model.get_node('status.rpm')
-        if curtime and rpm:
-            self.logview.add_data(int(curtime.val), int(rpm.val))
+#        curtime = self.model.get_node('status.current_time')
+#        rpm = self.model.get_node('status.rpm')
+#        if curtime and rpm:
+#            self.logview.add_data(int(curtime.val), int(rpm.val))
 
     def interrogate_cb(self):
         self.main_window.interrogation_completed()

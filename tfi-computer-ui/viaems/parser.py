@@ -58,6 +58,8 @@ class Parser():
         line = self._parse_response(line.rstrip())
 
         if self.command_queue[0]["callback"]:
+            if not success:
+                print(self.command_queue[0]["command"])
             self.command_queue[0]["callback"](line if success else None)
         del self.command_queue[0]
         if len(self.command_queue) > 0:
@@ -85,6 +87,9 @@ class Parser():
 
     def _packet_callback(self, line):
         line = str(line)
+
+        if line.startswith("# "):
+            return
 
         if line.startswith("* "):
             self._finish_command_response(line[2:], success=True)
