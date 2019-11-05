@@ -1,4 +1,5 @@
 from PySide2 import QtCore
+from PySide2 import QtGui
 from viaems.model import *
 
 
@@ -108,6 +109,7 @@ class TableEditorModel(QtCore.QAbstractTableModel):
     def __init__(self, table_node=None):
         super(TableEditorModel, self).__init__()
         self.node = table_node
+        self.highlight_point = None
 
     def setNode(self, node):
         self.node = node
@@ -139,6 +141,13 @@ class TableEditorModel(QtCore.QAbstractTableModel):
                 return self.node.table[index.row()][index.column()]
             else:
                 return self.node.table[index.column()]
+        if role == QtCore.Qt.BackgroundColorRole and self.highlight_point:
+            dist = self.node.get_position_dist(index.column(), index.row(),
+                    self.highlight_point[0], self.highlight_point[1])
+            if dist <= 2:
+                color = QtGui.QColor(QtCore.Qt.green)
+                color = color.lighter((dist + 1.0) * 100)
+                return color
 
     def headerData(self, i, orientation, role):
         if role != QtCore.Qt.DisplayRole:

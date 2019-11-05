@@ -1,4 +1,5 @@
 import time
+import math
 
 from viaems.parser import Parser
 
@@ -65,6 +66,19 @@ class TableNode(Node):
             self.table[col] = val
         self.model.parser.set(None, self.name, {pos: val})
 
+    def get_position_dist(self, row, col, row_v, col_v):
+        r_radius = (float(self.row_labels[-1]) - float(self.row_labels[0])) / self.rows
+        c_radius = (float(self.col_labels[-1]) - float(self.col_labels[0])) / self.cols
+
+        r_ind_val = float(self.row_labels[row])
+        c_ind_val = float(self.col_labels[col])
+
+        r_dist = abs(row_v - r_ind_val) / r_radius
+        c_dist = abs(col_v - c_ind_val) / c_radius
+
+        return math.sqrt(math.pow(r_dist, 2) + math.pow(c_dist, 2))
+
+
     def _refresh_info(self, val):
         if not isinstance(val, dict):
             return
@@ -72,6 +86,8 @@ class TableNode(Node):
         self.col_labels = val["collabels"][1:-1].split(",")
         self.rows = int(val["rows"])
         self.cols = int(val["cols"])
+        self.rowname = val["rowname"]
+        self.colname = val["colname"]
         self.naxis = int(val["naxis"])
         self.table = [None] * self.rows
         for r in range(self.rows):

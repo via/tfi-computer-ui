@@ -62,6 +62,15 @@ class MainWindow(QtWidgets.QMainWindow):
         hz = 1 / (time.time() - self.last_updated)
         self.last_updated = time.time()
 
+        table = self.table_editor_model
+        if table.node:
+            if table.node.rowname == "RPM" and table.node.colname == "MAP":
+                table.highlight_point = (
+                    float(self.model.nodes['status.decoder.rpm'].val),
+                    float(self.model.nodes['status.sensors.map'].val))
+                table.dataChanged.emit(table.createIndex(0, 0),
+                    table.createIndex(15, 15))
+
         self.statusbar.showMessage("Hz: {:d}".format(int(hz)))
 
     def select_table(self, index):
