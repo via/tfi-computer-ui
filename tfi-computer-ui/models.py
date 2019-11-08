@@ -1,5 +1,6 @@
 from PySide2 import QtCore
 from PySide2 import QtGui
+from PySide2 import QtWidgets
 from viaems.model import *
 
 
@@ -105,6 +106,18 @@ class TableModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole:
             return self.nodes[index.row()].name
 
+class TableEditorDelegate(QtWidgets.QStyledItemDelegate):
+
+#    def createEditor(self, parent, option, index):
+#        super().createEditor(parent, option, index)
+#        self.set = False
+
+    def setEditorData(self, editor, index):
+        if not hasattr(self, 'set') or not self.set:
+            self.set = True
+            text = index.model().data(index, QtCore.Qt.DisplayRole)
+            editor.setText(index.model().data(index, QtCore.Qt.DisplayRole))
+
 class TableEditorModel(QtCore.QAbstractTableModel):
     def __init__(self, table_node=None):
         super(TableEditorModel, self).__init__()
@@ -141,7 +154,7 @@ class TableEditorModel(QtCore.QAbstractTableModel):
                 return self.node.table[index.row()][index.column()]
             else:
                 return self.node.table[index.column()]
-        if role == QtCore.Qt.BackgroundColorRole and self.highlight_point:
+        if role == QtCore.Qt.BackgroundRole and self.highlight_point:
             dist = self.node.get_position_dist(index.column(), index.row(),
                     self.highlight_point[0], self.highlight_point[1])
             if dist <= 2:

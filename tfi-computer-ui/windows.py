@@ -2,7 +2,7 @@ from PySide2 import QtWidgets, QtGui
 from PySide2.QtCore import Qt, Signal
 from PySide2.QtCharts import QtCharts
 
-from models import StatusModel, TableModel, TableEditorModel
+from models import StatusModel, TableModel, TableEditorModel, TableEditorDelegate
 from widgets import DialGauge, BarGauge, Bulb
 
 import time
@@ -29,6 +29,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.table_editor_model = TableEditorModel()
         self.table_editor = QtWidgets.QTableView()
         self.table_editor.setModel(self.table_editor_model)
+        self.table_editor.setItemDelegate(TableEditorDelegate())
         tables_layout.addWidget(self.table_editor)
 
         tables_layout.setStretch(1, 10)
@@ -69,7 +70,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     float(self.model.nodes['status.decoder.rpm'].val),
                     float(self.model.nodes['status.sensors.map'].val))
                 table.dataChanged.emit(table.createIndex(0, 0),
-                    table.createIndex(15, 15))
+                    table.createIndex(15, 15),
+                    [Qt.BackgroundRole])
 
         self.statusbar.showMessage("Hz: {:d}".format(int(hz)))
 

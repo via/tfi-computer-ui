@@ -29,9 +29,9 @@ class TfiUI():
         target = TCPTarget()
         target.start()
 
-        self.logview = LogViewDialog()
-        self.logview.show()
-        self.logview.adjustSize()
+#        self.logview = LogViewDialog()
+#        self.logview.show()
+#        self.logview.adjustSize()
 
         self.gauge_dialog = GaugesDialog()
         self.gauge_dialog.show()
