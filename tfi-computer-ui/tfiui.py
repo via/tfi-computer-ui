@@ -1,4 +1,6 @@
 import sys
+import time
+
 from PySide2.QtWidgets import QApplication
 from viaems.model import Model
 from serialsource import TCPTarget
@@ -12,10 +14,13 @@ class TfiUI():
         pass
 
     def update_cb(self, nodes):
-        self.gauge_dialog.updateStats(self.model.nodes)
-        self.gauge_dialog.update()
+        time_since = time.time() - self.last_update
+        if time_since > (1/30):
+            self.last_update = time.time()
+            self.gauge_dialog.updateStats(self.model.nodes)
+            self.gauge_dialog.update()
+            self.main_window.status_updates(nodes)
 
-        self.main_window.status_updates(nodes)
 
 #        curtime = self.model.get_node('status.current_time')
 #        rpm = self.model.get_node('status.rpm')
@@ -28,6 +33,7 @@ class TfiUI():
     def __init__(self):
         target = TCPTarget()
         target.start()
+        self.last_update = time.time()
 
 #        self.logview = LogViewDialog()
 #        self.logview.show()
