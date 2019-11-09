@@ -4,6 +4,7 @@ import time
 from PySide2.QtWidgets import QApplication
 from viaems.model import Model
 from serialsource import TCPTarget
+from autocalibrate import AutoCalibrate
 from windows import MainWindow, GaugesDialog, LogViewDialog
 
 app = QApplication(sys.argv)
@@ -21,7 +22,8 @@ class TfiUI():
             self.gauge_dialog.update()
             self.main_window.status_updates(nodes)
 
-
+        if self.autocal:
+            self.autocal.update(nodes)
 #        curtime = self.model.get_node('status.current_time')
 #        rpm = self.model.get_node('status.rpm')
 #        if curtime and rpm:
@@ -29,6 +31,9 @@ class TfiUI():
 
     def interrogate_cb(self):
         self.main_window.interrogation_completed()
+
+        vetable = self.model.get_node('config.tables.ve')
+        self.autocal = AutoCalibrate(vetable, tickrate=1000000)
 
     def __init__(self):
         target = TCPTarget()
@@ -51,6 +56,8 @@ class TfiUI():
         self.main_window.adjustSize()
 
         self.model.start_interrogation()
+
+        self.autocal = None
 
 
 tfi = TfiUI()

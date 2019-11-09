@@ -17,13 +17,11 @@ class StatusModel(QtCore.QAbstractTableModel):
                 self.nodes.append(node)
         self.modelReset.emit()
 
-    def new_data(self, nodes=[]):
-        for newdata_node in nodes:
-            for row in range(len(self.nodes)):
-                if newdata_node == self.nodes[row].name:
-                    self.dataChanged.emit(self.createIndex(0, row),
-                            self.createIndex(2, row))
-                    break
+    def new_data(self, nodes={}):
+        for i, statusnode in enumerate(self.nodes):
+            if statusnode.name in nodes.keys():
+                self.dataChanged.emit(self.createIndex(0, i),
+                        self.createIndex(2, i))
 
     def rowCount(self, parent):
         if parent is None:
@@ -155,6 +153,8 @@ class TableEditorModel(QtCore.QAbstractTableModel):
             else:
                 return self.node.table[index.column()]
         if role == QtCore.Qt.BackgroundRole and self.highlight_point:
+            if self.node.table_written[index.row()][index.column()]:
+                return QtGui.QColor(QtCore.Qt.red)
             dist = self.node.get_position_dist(index.column(), index.row(),
                     self.highlight_point[0], self.highlight_point[1])
             if dist <= 2:

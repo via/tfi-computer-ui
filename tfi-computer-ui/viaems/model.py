@@ -37,7 +37,6 @@ class TableNode(Node):
 
     def _refresh_row(self, row):
         def refresh_point(val):
-            print(val)
             if not self.table[row]:
                 self.table[row] = []
             self.table[row] = [float(x) for x in val]
@@ -61,6 +60,7 @@ class TableNode(Node):
         if self.naxis == 2:
             pos = "[{}][{}]".format(row, col)
             self.table[row][col] = val
+            self.table_written[row][col] = True
         else:
             pos = "[{}]".format(col)
             self.table[col] = val
@@ -90,8 +90,10 @@ class TableNode(Node):
         self.colname = val["colname"]
         self.naxis = int(val["naxis"])
         self.table = [None] * self.rows
+        self.table_written = [None] * self.rows
         for r in range(self.rows):
             self.table[r] = [0.0] * self.cols
+            self.table_written[r] = [False] * self.cols
 
         if self.naxis == 2:
             for row in range(self.rows):
@@ -143,12 +145,9 @@ class Model():
                 return node
 
     def _new_data(self, data):
-        updated_nodes = []
-        #print(data)
         for field in data:
             if field in self.nodes:
-                updated_nodes.append(field)
                 self.nodes[field].val = data[field]
         if self.update_cb:
-            self.update_cb(updated_nodes)
+            self.update_cb(data)
 
