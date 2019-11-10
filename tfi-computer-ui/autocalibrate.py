@@ -27,7 +27,6 @@ class AutoCalibrate():
                 "status.sensors.brv": 0.1,
                 "status.fueling.lambda": 0.03,
                 "status.fueling.ve": 3,
-                "status.fueling.ve": 3,
                 }
         self._reset_points(self.required_nodes)
 
@@ -76,7 +75,7 @@ class AutoCalibrate():
                 break
 
         if rpm_point and map_point:
-            actual = old_ve + (new_ve - old_ve) * 0.1
+            actual = round(old_ve + (new_ve - old_ve) * 0.33, 1)
             print ("rpm = {} map = {}   {} -> {} ({})".format(
                 rpm, pres, old_ve, new_ve, actual))
             if actual < 3 or actual > 100:
@@ -108,12 +107,15 @@ class AutoCalibrate():
                             "status.fueling.lambda",
                             "status.fueling.ve"])
 
-                new_ve = self.ve_correction(averages['status.fueling.ve'],
-                    averages['status.fueling.lambda'], averages['status.sensors.ego'])
-                self.write_change(averages['status.decoder.rpm'],
-                        averages['status.sensors.map'],
-                        averages['status.fueling.ve'], 
-                        new_ve)
+                try:
+                    new_ve = self.ve_correction(averages['status.fueling.ve'],
+                        averages['status.fueling.lambda'], averages['status.sensors.ego'])
+                    self.write_change(averages['status.decoder.rpm'],
+                            averages['status.sensors.map'],
+                            averages['status.fueling.ve'], 
+                            new_ve)
+                except:
+                    pass
 
             self.last_correction = curtime
             self._reset_points(self.required_nodes)
