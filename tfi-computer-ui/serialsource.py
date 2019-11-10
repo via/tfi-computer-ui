@@ -5,7 +5,7 @@ class TCPTarget(QThread):
     packet_update = Signal(str)
     status_update = Signal(bool)
 
-    def __init__(self, host='localhost', port=1233,
+    def __init__(self, host='localhost', port=1234,
             packet_callback=None, status_callback=None):
         super(TCPTarget, self).__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
