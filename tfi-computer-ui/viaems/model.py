@@ -1,5 +1,6 @@
-import time
+import json
 import math
+import time
 
 from viaems.parser import Parser
 
@@ -14,6 +15,7 @@ class Node():
 
     def _refresh_cb(self, val):
         self.val = val
+        self.last_refresh = time.time()
 
     def refresh(self):
         self.model.parser.get(self._refresh_cb, self.name)
@@ -51,8 +53,8 @@ class TableNode(Node):
         def refresh_point(val):
             self.table = [float(x) for x in val]
             self.last_refresh = time.time()
-        points = ["[{}]".format(row)
-                  for row in range(self.rows)]
+        points = ["[{}]".format(col)
+                  for col in range(self.cols)]
         self.model.parser.get(refresh_point, self.name, points)
 
     def set_point(self, row, col, val):
@@ -64,9 +66,12 @@ class TableNode(Node):
         else:
             pos = "[{}]".format(col)
             self.table[col] = val
+            self.table_written[col] = True
         self.model.parser.set(None, self.name, {pos: val})
 
     def get_position_dist(self, row, col, row_v, col_v):
+        if self.naxis == 1:
+            return 1000
         r_radius = (float(self.row_labels[-1]) - float(self.row_labels[0])) / self.rows
         c_radius = (float(self.col_labels[-1]) - float(self.col_labels[0])) / self.cols
 
@@ -81,6 +86,7 @@ class TableNode(Node):
 
     def _refresh_info(self, val):
         if not isinstance(val, dict):
+            self.last_refresh = time.time()
             return
         self.row_labels = val["rowlabels"][1:-1].split(",")
         self.col_labels = val["collabels"][1:-1].split(",")
@@ -89,29 +95,46 @@ class TableNode(Node):
         self.rowname = val["rowname"]
         self.colname = val["colname"]
         self.naxis = int(val["naxis"])
-        self.table = [None] * self.rows
-        self.table_written = [None] * self.rows
-        for r in range(self.rows):
-            self.table[r] = [0.0] * self.cols
-            self.table_written[r] = [False] * self.cols
 
         if self.naxis == 2:
-            for row in range(self.rows):
-                self._refresh_row(row)
+            self.table = [None] * self.rows
+            self.table_written = [None] * self.rows
+            for r in range(self.rows):
+                self.table[r] = [0.0] * self.cols
+                self.table_written[r] = [False] * self.cols
+                self._refresh_row(r)
         else:
+            self.table = [0.0] * self.cols
+            self.table_written = [False] * self.cols
             self._refresh_single_axis()
 
     def refresh(self):
         self.model.parser.get(self._refresh_info, self.name)
 
+    def value(self):
+        """Return a dict representing the full table metadata and data."""
+        if not hasattr(self, "table"):
+            return {}
+        return {
+            "rowlabels": self.row_labels,
+            "collabels": self.col_labels,
+            "rows": self.rows,
+            "cols": self.cols,
+            "rowname": self.rowname,
+            "colname": self.colname,
+            "naxis": self.naxis,
+            "table": self.table
+            }
+
 class Model():
 
-    def __init__(self, target, update_cb=None, interrogate_cb=None):
+    def __init__(self, target, update_cb=None, enumerate_cb=None, interrogate_cb=None):
         self.target = target
         self.parser = Parser(target, self._new_data)
         self.update_cb = update_cb
         self.interrogate_cb = interrogate_cb
-
+        self.enumerate_cb = enumerate_cb
+        self.full_interrogation_completed = False
         self.nodes = {}
 
     def start_interrogation(self):
@@ -129,7 +152,7 @@ class Model():
                 n = TableNode(node, model=self)
                 self.nodes[node] = n
                 n.refresh()
-        self.interrogate_cb()
+        self.enumerate_cb()
 
     def set_auto_refresh(self, node, enabled):
         current = self.parser.feed_fields.copy()
@@ -150,4 +173,20 @@ class Model():
                 self.nodes[field].val = data[field]
         if self.update_cb:
             self.update_cb(data)
+        if not self.full_interrogation_completed and len(self.nodes) > 0:
+            # Iterate through all nodes, are we done?
+            if None not in [x.last_refresh for x in self.nodes.values()]:
+                self.full_interrogation_completed = True
+                self.interrogate_cb()
+
+
+    def dump_to_file(self, path):
+        results = {}
+        for nodename, node in self.nodes.items():
+            if isinstance(node, StatusNode):
+                continue
+            results[nodename] = node.value()
+
+        with open(path, "w") as f:
+            json.dump(results, f)
 

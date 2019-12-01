@@ -139,10 +139,7 @@ class TableEditorModel(QtCore.QAbstractTableModel):
         if parent is None or self.node is None:
             return 0
 
-        if self.node.naxis == 2:
-            return self.node.cols
-        else:
-            return self.node.rows
+        return self.node.cols
 
     def data(self, index, role):
         if self.node is None:
@@ -152,27 +149,30 @@ class TableEditorModel(QtCore.QAbstractTableModel):
                 return self.node.table[index.row()][index.column()]
             else:
                 return self.node.table[index.column()]
-        if role == QtCore.Qt.BackgroundRole and self.highlight_point:
-            if self.node.table_written[index.row()][index.column()]:
+        if role == QtCore.Qt.ForegroundRole:
+            if self.node.naxis == 2 and self.node.table_written[index.row()][index.column()]:
                 return QtGui.QColor(QtCore.Qt.red)
-            dist = self.node.get_position_dist(index.column(), index.row(),
+            if self.node.naxis == 1 and self.node.table_written[index.column()]:
+                return QtGui.QColor(QtCore.Qt.red)
+        if role == QtCore.Qt.BackgroundRole and self.highlight_point:
+            dist = self.node.get_position_dist(index.row(), index.column(),
                     self.highlight_point[0], self.highlight_point[1])
             if dist <= 2:
                 color = QtGui.QColor(QtCore.Qt.green)
                 color = color.lighter((dist + 1.0) * 100)
                 return color
-
+    
     def headerData(self, i, orientation, role):
         if role != QtCore.Qt.DisplayRole:
             return
         if self.node.naxis == 2:
             if orientation == QtCore.Qt.Horizontal:
-                return self.node.row_labels[i]
-            else:
                 return self.node.col_labels[i]
+            else:
+                return self.node.row_labels[i]
         else:
             if orientation == QtCore.Qt.Horizontal:
-                return self.node.row_labels[i]
+                return self.node.col_labels[i]
 
     def flags(self, index):
         flags = super(TableEditorModel, self).flags(index)

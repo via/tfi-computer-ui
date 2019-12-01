@@ -5,6 +5,7 @@ from PySide2.QtCharts import QtCharts
 from models import StatusModel, TableModel, TableEditorModel, TableEditorDelegate
 from widgets import DialGauge, BarGauge, Bulb
 
+from datetime import datetime
 import time
 
 
@@ -15,6 +16,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
         self.last_updated = time.time()
         self.model = model
+        self.interrogate_status = "in progress"
 
         tables_groupbox = QtWidgets.QGroupBox("Tables")
         tables_layout = QtWidgets.QHBoxLayout()
@@ -55,6 +57,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar = QtWidgets.QStatusBar()
         self.setStatusBar(self.statusbar)
 
+        filemenu = self.menuBar().addMenu("File")
+        filemenu.addAction("Save Config...")
+        filemenu.addAction("Reset Config")
+
+
     def closeEvent(self, event):
         self.closed.emit()
 
@@ -65,15 +72,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         table = self.table_editor_model
         if table.node:
-            if table.node.rowname == "RPM" and table.node.colname == "MAP":
+            if table.node.colname == "RPM" and table.node.rowname == "MAP":
                 table.highlight_point = (
-                    float(self.model.nodes['status.decoder.rpm'].val),
-                    float(self.model.nodes['status.sensors.map'].val))
+                    float(self.model.nodes['status.sensors.map'].val),
+                    float(self.model.nodes['status.decoder.rpm'].val))
                 table.dataChanged.emit(table.createIndex(0, 0),
                     table.createIndex(15, 15),
                     [Qt.BackgroundRole])
 
-        self.statusbar.showMessage("Hz: {:d}".format(int(hz)))
+        self.statusbar.showMessage("Interrogation: {}  (Hz: {:d})".format(self.interrogate_status, int(hz)))
 
     def select_table(self, index):
         if index is None:
@@ -86,6 +93,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.table_editor.resizeRowsToContents()
 
     def interrogation_completed(self):
+        self.interrogate_status = "completed"
+
+        self.model.dump_to_file("/home/via/dev/viaems-logs/{}.config".format(datetime.isoformat(datetime.now())))
+
+    def enumeration_completed(self):
         self.status_model._model_changed(self.model)
         self.table_model._model_changed(self.model)
 

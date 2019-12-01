@@ -24,8 +24,8 @@ class AutoCalibrate():
                 "status.sensors.ego": 0.03,
                 "status.sensors.map": 5,
                 "status.sensors.tps": 3,
-                "status.sensors.brv": 0.1,
-                "status.fueling.lambda": 0.03,
+                "status.sensors.brv": 0.4,
+                "status.fueling.lambda": 0.05,
                 "status.fueling.ve": 3,
                 }
         self._reset_points(self.required_nodes)
@@ -36,6 +36,8 @@ class AutoCalibrate():
     def _inputs_are_stable(self, nodes=[]):
         for k in nodes:
             if self.maxs[k] - self.mins[k] > self.ranges[k]:
+                print("Unstable input {}: {}-{} greater than {}".format(k,
+                    self.mins[k], self.maxs[k], self.ranges[k]))
                 return False
         return True
 
@@ -65,17 +67,17 @@ class AutoCalibrate():
         rpm_point = None
         map_point = None
 
-        for i, r in enumerate(self.vetable.row_labels):
-            if abs(float(r) - rpm) < 100:
+        for i, r in enumerate(self.vetable.col_labels):
+            if abs(float(r) - rpm) < 200:
                 rpm_point = i
                 break
-        for i, m in enumerate(self.vetable.col_labels):
+        for i, m in enumerate(self.vetable.row_labels):
             if abs(float(m) - pres) < 3:
                 map_point = i
                 break
 
         if rpm_point and map_point:
-            actual = round(old_ve + (new_ve - old_ve) * 0.33, 1)
+            actual = round(old_ve + (new_ve - old_ve) * 0.25, 1)
             print ("rpm = {} map = {}   {} -> {} ({})".format(
                 rpm, pres, old_ve, new_ve, actual))
             if actual < 3 or actual > 100:

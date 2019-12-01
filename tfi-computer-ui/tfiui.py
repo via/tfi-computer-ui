@@ -29,11 +29,13 @@ class TfiUI():
 #        if curtime and rpm:
 #            self.logview.add_data(int(curtime.val), int(rpm.val))
 
+    def enumerate_cb(self):
+        self.main_window.enumeration_completed()
+
     def interrogate_cb(self):
         self.main_window.interrogation_completed()
-
         vetable = self.model.get_node('config.tables.ve')
-        self.autocal = AutoCalibrate(vetable, tickrate=1000000)
+        #self.autocal = AutoCalibrate(vetable, tickrate=4000000)
 
     def __init__(self):
         target = TCPTarget()
@@ -49,6 +51,7 @@ class TfiUI():
         self.gauge_dialog.adjustSize()
 
         self.model = Model(target, update_cb=self.update_cb,
+                           enumerate_cb=self.enumerate_cb,
                            interrogate_cb=self.interrogate_cb)
         self.main_window = MainWindow(self.model)
         self.main_window.closed.connect(app.quit)

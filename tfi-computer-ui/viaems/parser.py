@@ -1,3 +1,5 @@
+from datetime import datetime
+
 class Parser():
 
     def __init__(self, target, data_update_cb):
@@ -8,7 +10,7 @@ class Parser():
         target.set_status_callback(self._status_callback)
         target.set_packet_callback(self._packet_callback)
         self.get(self._read_feed_vars, "config.feed")
-        self.logfile = open('/home/via/tmp/log', 'w')
+        self.logfile = open('/home/via/dev/viaems-logs/{}'.format(datetime.isoformat(datetime.now())), 'w')
 
     def list(self, cb, prefix):
         cmd = "list {}".format(prefix)
@@ -42,7 +44,7 @@ class Parser():
     def _read_feed_vars(self, line):
         if line is None:
             return
-        self.logfile.write(line)
+        self.logfile.write(line + "\n")
         self.feed_fields = line.strip().split(',')
 
     def _send_request(self, request, callback):
