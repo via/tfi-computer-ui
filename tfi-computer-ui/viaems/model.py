@@ -36,7 +36,9 @@ class StatusNode(Node):
     def set(self, value):
         pass
 
-
+class ConfigNode(Node):
+    pass
+    
 class TableNode(Node):
 
     def _refresh_row(self, row):
@@ -85,18 +87,21 @@ class TableNode(Node):
         self.table = value["table"]
 
         self.model.parser.set(None, self.name, {
-            "collabels": ",".join(self.col_labels),
+            "naxis": self.naxis,
             "rows": self.rows,
             "cols": self.cols,
+            })
+        self.model.parser.set(None, self.name, {
+            "collabels": "[" + ",".join(self.col_labels) + "]",
             "colname": self.colname,
-            "naxis": self.naxis})
+            })
         if self.naxis == 1:
             points = ["[{}]={}".format(col, val) for col, val in enumerate(self.table)]
             self.model.parser.set(None, self.name, points)
         else:
             self.model.parser.set(None, self.name, {
                 "rowname": self.rowname,
-                "rowlabels": ",".join(self.row_labels)
+                "rowlabels": "[" + ",".join(self.row_labels) + "]"
                 })
             for row, data in enumerate(self.table):
                 points = ["[{}][{}]={}".format(row, col, val) for col, val in
@@ -186,6 +191,12 @@ class Model():
                 n.refresh()
             elif node.startswith("config.tables."):
                 n = TableNode(node, model=self)
+                self.nodes[node] = n
+                n.refresh()
+            elif node.startswith("config.fueling.") or \
+                node.startswith("config.ignition.") or \
+                node.startswith("config.decoder."):
+                n = ConfigNode(node, model=self)
                 self.nodes[node] = n
                 n.refresh()
         self.enumerate_cb()
