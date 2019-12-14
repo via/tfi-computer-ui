@@ -28,11 +28,13 @@ class Node():
         return self.val
 
     def set(self, newvalue):
-        pass
+        self.model.parser.set(None, self.name, newvalue)
 
 
 class StatusNode(Node):
-    pass
+    
+    def set(self, value):
+        pass
 
 
 class TableNode(Node):
@@ -68,6 +70,40 @@ class TableNode(Node):
             self.table[col] = val
             self.table_written[col] = True
         self.model.parser.set(None, self.name, {pos: val})
+
+    def set(self, value):
+        if value == {}:
+            return
+
+        self.row_labels = value["rowlabels"]
+        self.col_labels = value["collabels"]
+        self.rows = value["rows"]
+        self.cols = value["cols"]
+        self.rowname = value["rowname"]
+        self.colname = value["colname"]
+        self.naxis = value["naxis"]
+        self.table = value["table"]
+
+        self.model.parser.set(None, self.name, {
+            "collabels": ",".join(self.col_labels),
+            "rows": self.rows,
+            "cols": self.cols,
+            "colname": self.colname,
+            "naxis": self.naxis})
+        if self.naxis == 1:
+            points = ["[{}]={}".format(col, val) for col, val in enumerate(self.table)]
+            self.model.parser.set(None, self.name, points)
+        else:
+            self.model.parser.set(None, self.name, {
+                "rowname": self.rowname,
+                "rowlabels": ",".join(self.row_labels)
+                })
+            for row, data in enumerate(self.table):
+                points = ["[{}][{}]={}".format(row, col, val) for col, val in
+                        enumerate(data)]
+                self.model.parser.set(None, self.name, points)
+
+        
 
     def get_position_dist(self, row, col, row_v, col_v):
         if self.naxis == 1:
@@ -179,6 +215,16 @@ class Model():
                 self.full_interrogation_completed = True
                 self.interrogate_cb()
 
+    def load_from_file(self, path):
+        config = json.load(open(path, "r"))
+        for nodename, node in self.nodes.items():
+            if isinstance(node, StatusNode):
+                continue
+            if nodename not in config:
+                continue
+            if config[nodename] is None:
+                continue
+            node.set(config[nodename])
 
     def dump_to_file(self, path):
         results = {}

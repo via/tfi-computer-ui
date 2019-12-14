@@ -59,7 +59,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         filemenu = self.menuBar().addMenu("File")
         filemenu.addAction("Save Config...")
-        filemenu.addAction("Reset Config")
+        loadaction = filemenu.addAction("Load Config...")
+
+        loadaction.triggered.connect(self._load_config_action)
+
+    def _load_config_action(self):
+       filename = QtWidgets.QFileDialog.getOpenFileName(self, "Load Config",
+               filter="ViaEMS Configs (*.json *.config)")
+       self.model.load_from_file(filename[0]) 
 
 
     def closeEvent(self, event):
