@@ -4,6 +4,7 @@ import time
 from PySide2.QtWidgets import QApplication
 from viaems.model import Model
 from serialsource import TCPTarget
+from logfilesource import LogFileTarget
 from autocalibrate import AutoCalibrate
 from windows import MainWindow, GaugesDialog, LogViewDialog
 
@@ -24,10 +25,14 @@ class TfiUI():
 
         if self.autocal:
             self.autocal.update(nodes)
-#        curtime = self.model.get_node('status.current_time')
-#        rpm = self.model.get_node('status.rpm')
-#        if curtime and rpm:
-#            self.logview.add_data(int(curtime.val), int(rpm.val))
+        curtime = self.model.get_node('status.current_time')
+        map = self.model.get_node('status.sensors.map')
+        rpm = self.model.get_node('status.decoder.rpm')
+        ego = self.model.get_node('status.sensors.ego')
+
+        if curtime and map:
+            self.logview.add_data(int(curtime.val), {"rpm": int(rpm.val), "map":
+                float(map.val), "ego": float(ego.val)})
 
     def enumerate_cb(self):
         self.main_window.enumeration_completed()
@@ -39,12 +44,13 @@ class TfiUI():
 
     def __init__(self):
         target = TCPTarget()
+#        target = LogFileTarget("testlog")
         target.start()
         self.last_update = time.time()
 
-#        self.logview = LogViewDialog()
-#        self.logview.show()
-#        self.logview.adjustSize()
+        self.logview = LogViewDialog()
+        self.logview.show()
+        self.logview.adjustSize()
 
         self.gauge_dialog = GaugesDialog()
         self.gauge_dialog.show()
