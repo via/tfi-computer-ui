@@ -14,13 +14,13 @@ class TfiUI():
     def connUpdate(self):
         pass
 
-    def update_cb(self, nodes):
+    def update_cb(self, updates):
         time_since = time.time() - self.last_update
         if time_since > (1/30):
             self.last_update = time.time()
-            self.gauge_dialog.updateStats(self.model.nodes)
+            self.gauge_dialog.updateStats(updates)
             self.gauge_dialog.update()
-            self.main_window.status_updates(nodes)
+            self.main_window.status_updates(updates)
 
         if self.autocal:
             self.autocal.update(nodes)

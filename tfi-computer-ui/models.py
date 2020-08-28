@@ -7,21 +7,16 @@ from viaems.model import *
 class StatusModel(QtCore.QAbstractTableModel):
     def __init__(self):
         super(StatusModel, self).__init__()
-        self.nodes = []
+        self.nodes = {}
 
     def _model_changed(self, model):
-        self.nodes = []
-        for n in sorted(model.nodes):
-            node = model.nodes[n]
-            if isinstance(node, StatusNode):
-                self.nodes.append(node)
+        self.nodes = model.status
         self.modelReset.emit()
 
     def new_data(self, nodes={}):
-        for i, statusnode in enumerate(self.nodes):
-            if statusnode.name in nodes.keys():
-                self.dataChanged.emit(self.createIndex(0, i),
-                        self.createIndex(2, i))
+        self.nodes = nodes
+        self.dataChanged.emit(self.createIndex(0, 0),
+            self.createIndex(2, len(self.nodes)))
 
     def rowCount(self, parent):
         if parent is None:
@@ -51,16 +46,11 @@ class StatusModel(QtCore.QAbstractTableModel):
 
     def data(self, index, role):
         if role == QtCore.Qt.DisplayRole:
+            val = sorted(self.nodes.keys())
             if index.column() == 0:
-                return self.nodes[index.row()].name
+                return val[index.row()]
             elif index.column() == 1:
-                return self.nodes[index.row()].value()
-        elif role == QtCore.Qt.CheckStateRole:
-            if index.column() == 2:
-                if self.nodes[index.row()].auto_refresh:
-                    return QtCore.Qt.Checked
-                else:
-                    return QtCore.Qt.Unchecked
+                return self.nodes[val[index.row()]]
 
     def headerData(self, column, orientation, role):
         if role != QtCore.Qt.DisplayRole or orientation != QtCore.Qt.Horizontal:

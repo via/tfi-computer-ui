@@ -72,8 +72,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.closed.emit()
 
-    def status_updates(self, nodes):
-        self.status_model.new_data(nodes)
+    def status_updates(self, status):
+        self.status_model.new_data(status)
         hz = 1 / (time.time() - self.last_updated)
         self.last_updated = time.time()
 
@@ -81,8 +81,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if table.node:
             if table.node.colname == "RPM" and table.node.rowname == "MAP":
                 table.highlight_point = (
-                    float(self.model.nodes['status.sensors.map'].val),
-                    float(self.model.nodes['status.decoder.rpm'].val))
+                    float(self.model.status['sensors.map'].val),
+                    float(self.model.status['rpm'].val))
                 table.dataChanged.emit(table.createIndex(0, 0),
                     table.createIndex(15, 15),
                     [Qt.BackgroundRole])
@@ -203,40 +203,17 @@ class GaugesDialog(QtWidgets.QDialog):
         self.setPalette(pal)
         self.setAutoFillBackground(True)
 
-        self.gauge_update_funcs = {
-            'status.decoder.rpm': lambda x: self._update_gauge_float(
-                self.rpm, x),
-            'status.sensors.map': lambda x: self._update_gauge_float(
-                self.manpres, x),
-            'status.sensors.ego': lambda x: self._update_gauge_float(
-                self.ego, x),
-            'status.ignition.timing_advance': lambda x: self._update_gauge_float(
-                self.adv, x),
-            'status.decoder.state': lambda x: self._update_gauge_bulb(
-                self.syncstatus, "full", x),
-        }
-
-    def _update_gauge_float(self, gauge, value):
-        try:
-            v = value.value()
-            v = float(v)
-            gauge.setValue(v)
-        except ValueError as e:
-            print(e)
-
-    def _update_gauge_bulb(self, gauge, on_value, value):
-        try:
-            v = value.value()
-            gauge.setStatus(v == on_value)
-        except ValueError as e:
-            print(e)
-
     def updateLinkStatus(self, up):
         self.connstatus.setStatus(up)
         self.connstatus.update()
 
-    def updateStats(self, stats):
-        for node_name, mapper in self.gauge_update_funcs.items():
-            if node_name in stats:
-                mapper(stats[node_name])
+    def updateStats(self, updates):
+        if 'rpm' in updates:
+            self.rpm.setValue(updates['rpm'])
+        if 'sensor.map' in updates:
+            self.manpres.setValue(updates['sensor.map'])
+        if 'sensor.ego' in updates:
+            self.ego.setValue(updates['sensor.ego'])
+        if 'advance' in updates:
+            self.adv.setValue(updates['advance'])
 

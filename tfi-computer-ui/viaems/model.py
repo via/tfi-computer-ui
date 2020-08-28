@@ -29,9 +29,7 @@ class Node():
 
 
 class StatusNode(Node):
-    
-    def set(self, value):
-        pass
+    pass
 
 class ConfigNode(Node):
     pass
@@ -137,12 +135,13 @@ class Model():
 
     def __init__(self, target, update_cb=None, enumerate_cb=None, interrogate_cb=None):
         self.target = target
-        self.parser = Parser(target, self._new_data)
+        self.parser = Parser(target, self._feed_message)
         self.update_cb = update_cb
         self.interrogate_cb = interrogate_cb
         self.enumerate_cb = enumerate_cb
         self.full_interrogation_completed = False
         self.nodes = {}
+        self.status = {}
 
     def start_interrogation(self):
         self.parser.structure(self._handle_structure)
@@ -159,8 +158,9 @@ class Model():
             if nodename == name:
                 return node
 
-    def _new_data(self, data):
-        pass
+    def _feed_message(self, data):
+        self.status = data
+        self.update_cb(data)
 
     def load_from_file(self, path):
         config = json.load(open(path, "r"))
