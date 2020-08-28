@@ -3,8 +3,8 @@ import time
 
 from PySide2.QtWidgets import QApplication
 from viaems.model import Model
-from serialsource import TCPTarget
-from autocalibrate import AutoCalibrate
+from tcpsource import TCPTarget
+#from autocalibrate import AutoCalibrate
 from windows import MainWindow, GaugesDialog, LogViewDialog
 
 app = QApplication(sys.argv)

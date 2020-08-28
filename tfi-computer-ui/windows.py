@@ -103,8 +103,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.interrogate_status = "completed"
 
         self.model.dump_to_file("/home/via/dev/viaems-logs/{}.config".format(datetime.isoformat(datetime.now())))
+        print (self.model.nodes)
 
     def enumeration_completed(self):
+        print (self.model.nodes)
         self.status_model._model_changed(self.model)
         self.table_model._model_changed(self.model)
 

@@ -150,10 +150,11 @@ class TableEditorModel(QtCore.QAbstractTableModel):
             else:
                 return self.node.table[index.column()]
         if role == QtCore.Qt.ForegroundRole:
-            if self.node.naxis == 2 and self.node.table_written[index.row()][index.column()]:
-                return QtGui.QColor(QtCore.Qt.red)
-            if self.node.naxis == 1 and self.node.table_written[index.column()]:
-                return QtGui.QColor(QtCore.Qt.red)
+            pass
+#            if self.node.naxis == 2 and self.node.table_written[index.row()][index.column()]:
+#                return QtGui.QColor(QtCore.Qt.red)
+#            if self.node.naxis == 1 and self.node.table_written[index.column()]:
+#                return QtGui.QColor(QtCore.Qt.red)
         if role == QtCore.Qt.BackgroundRole and self.highlight_point:
             dist = self.node.get_position_dist(index.row(), index.column(),
                     self.highlight_point[0], self.highlight_point[1])

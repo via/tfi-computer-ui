@@ -6,23 +6,20 @@ from viaems.parser import Parser
 
 
 class Node():
-    def __init__(self, name, model):
-        self.name = name
+    def __init__(self, name, path, model):
         self.model = model
+        self.name = name
+        self.path = path
         self.val = None
         self.auto_refresh = False
         self.last_refresh = None
 
-    def _refresh_cb(self, val):
-        self.val = val
+    def _refresh_cb(self, msg):
+        self.val = msg['response']
         self.last_refresh = time.time()
 
     def refresh(self):
-        self.model.parser.get(self._refresh_cb, self.name)
-
-    def set_auto_refresh(self, val):
-        self.model.set_auto_refresh(self.name, val)
-        self.auto_refresh = val
+        self.model.parser.get(self._refresh_cb, self.path)
 
     def value(self):
         return self.val
@@ -40,26 +37,6 @@ class ConfigNode(Node):
     pass
     
 class TableNode(Node):
-
-    def _refresh_row(self, row):
-        def refresh_point(val):
-            if not self.table[row]:
-                self.table[row] = []
-            self.table[row] = [float(x) for x in val]
-            if row == self.rows - 1:
-                # We've finished syncing
-                self.last_refresh = time.time()
-        cols = ["[{}][{}]".format(row, col)
-                for col in range(self.cols)]
-        self.model.parser.get(refresh_point, self.name, cols)
-
-    def _refresh_single_axis(self):
-        def refresh_point(val):
-            self.table = [float(x) for x in val]
-            self.last_refresh = time.time()
-        points = ["[{}]".format(col)
-                  for col in range(self.cols)]
-        self.model.parser.get(refresh_point, self.name, points)
 
     def set_point(self, row, col, val):
         pos = None
@@ -129,28 +106,17 @@ class TableNode(Node):
         if not isinstance(val, dict):
             self.last_refresh = time.time()
             return
-        self.row_labels = val["rowlabels"][1:-1].split(",")
-        self.col_labels = val["collabels"][1:-1].split(",")
-        self.rows = int(val["rows"])
-        self.cols = int(val["cols"])
-        self.rowname = val["rowname"]
-        self.colname = val["colname"]
-        self.naxis = int(val["naxis"])
-
-        if self.naxis == 2:
-            self.table = [None] * self.rows
-            self.table_written = [None] * self.rows
-            for r in range(self.rows):
-                self.table[r] = [0.0] * self.cols
-                self.table_written[r] = [False] * self.cols
-                self._refresh_row(r)
-        else:
-            self.table = [0.0] * self.cols
-            self.table_written = [False] * self.cols
-            self._refresh_single_axis()
+        self.col_labels = val["response"]["horizontal-axis"]['values']
+        self.row_labels = val["response"]["vertical-axis"]['values']
+        self.rows = len(self.row_labels)
+        self.cols = len(self.col_labels)
+        self.colname = val["response"]["horizontal-axis"]["name"]
+        self.rowname = val["response"]["vertical-axis"]["name"]
+        self.naxis = val["response"]["num-axis"]
+        self.table = val["response"]["data"]
 
     def refresh(self):
-        self.model.parser.get(self._refresh_info, self.name)
+        self.model.parser.get(self._refresh_info, self.path)
 
     def value(self):
         """Return a dict representing the full table metadata and data."""
@@ -179,35 +145,14 @@ class Model():
         self.nodes = {}
 
     def start_interrogation(self):
-        self.parser.list(self._handle_listing, "")
+        self.parser.structure(self._handle_structure)
 
-    def _handle_listing(self, resp):
-        for node in resp:
-            if node.startswith("status."):
-                n = StatusNode(node, model=self)
-                self.nodes[node] = n
-                if node in self.parser.feed_fields:
-                    n.auto_refresh = True
-                n.refresh()
-            elif node.startswith("config.tables."):
-                n = TableNode(node, model=self)
-                self.nodes[node] = n
-                n.refresh()
-            elif node.startswith("config.fueling.") or \
-                node.startswith("config.ignition.") or \
-                node.startswith("config.decoder."):
-                n = ConfigNode(node, model=self)
-                self.nodes[node] = n
-                n.refresh()
+    def _handle_structure(self, resp):
+        for name in resp['response']['tables']:
+            n = TableNode(name=name, path=["tables", name], model=self)
+            self.nodes[name] = n
+            n.refresh()
         self.enumerate_cb()
-
-    def set_auto_refresh(self, node, enabled):
-        current = self.parser.feed_fields.copy()
-        if node in current and not enabled:
-            current.remove(node)
-        elif node not in current and enabled:
-            current.append(node)
-        self.parser.set(None, "config.feed", ",".join(current))
 
     def get_node(self, nodename):
         for name, node in self.nodes.items():
@@ -215,16 +160,7 @@ class Model():
                 return node
 
     def _new_data(self, data):
-        for field in data:
-            if field in self.nodes:
-                self.nodes[field].val = data[field]
-        if self.update_cb:
-            self.update_cb(data)
-        if not self.full_interrogation_completed and len(self.nodes) > 0:
-            # Iterate through all nodes, are we done?
-            if None not in [x.last_refresh for x in self.nodes.values()]:
-                self.full_interrogation_completed = True
-                self.interrogate_cb()
+        pass
 
     def load_from_file(self, path):
         config = json.load(open(path, "r"))

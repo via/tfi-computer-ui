@@ -1,18 +1,18 @@
 from PySide2.QtCore import QThread, Signal
 import socket
+import cbor
 
 class TCPTarget(QThread):
-    packet_update = Signal(str)
+    packet_update = Signal(dict)
     status_update = Signal(bool)
 
-    def __init__(self, host='localhost', port=1236,
+    def __init__(self, host='localhost', port=1234,
             packet_callback=None, status_callback=None):
         super(TCPTarget, self).__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
         self.connected = True
-        self.file = self.socket.makefile(encoding='latin1',
-                buffering=1)
+        self.file = self.socket.makefile('rwb')
         self.set_packet_callback(packet_callback)
         self.set_status_callback(status_callback)
 
@@ -24,15 +24,16 @@ class TCPTarget(QThread):
             self.status_update.connect(cb)
         self.status_update.emit(self.connected)
 
-    def send_command(self, line):
-        line = str(line) + "\n"
-        self.socket.send(bytes(line, encoding='latin1'))
+    def send_command(self, message):
+        cbor.dump(message, self.file)
+        self.file.flush()
 
     def run(self):
         self.status_update.emit(self.connected)
 
-        for line in self.file:
-            self.packet_update.emit(line)
+        while True:
+            packet = cbor.load(self.file)
+            self.packet_update.emit(packet)
 
         self.connected = False
         self.status_update.emit(self.connected)
