@@ -6,7 +6,7 @@ class TCPTarget(QThread):
     packet_update = Signal(dict)
     status_update = Signal(bool)
 
-    def __init__(self, host='localhost', port=1234,
+    def __init__(self, host='localhost', port=1235,
             packet_callback=None, status_callback=None):
         super(TCPTarget, self).__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,7 +32,10 @@ class TCPTarget(QThread):
         self.status_update.emit(self.connected)
 
         while True:
-            packet = cbor.load(self.file)
+            try:
+                packet = cbor.load(self.file)
+            except:
+                continue
             self.packet_update.emit(packet)
 
         self.connected = False

@@ -58,10 +58,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStatusBar(self.statusbar)
 
         filemenu = self.menuBar().addMenu("File")
-        filemenu.addAction("Save Config...")
-        loadaction = filemenu.addAction("Load Config...")
 
+        filemenu.addAction("Save Config...")
+
+        loadaction = filemenu.addAction("Load Config...")
         loadaction.triggered.connect(self._load_config_action)
+
+        flashaction = filemenu.addAction("Flash")
+        flashaction.triggered.connect(self._flash_action)
+
+        dfuaction = filemenu.addAction("Reboot to DFU")
+        dfuaction.triggered.connect(self._dfu_action)
+
+    def _dfu_action(self):
+        self.model.parser.dfu()
+
+    def _flash_action(self):
+        self.model.parser.flash()
 
     def _load_config_action(self):
        filename = QtWidgets.QFileDialog.getOpenFileName(self, "Load Config",
@@ -73,7 +86,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.closed.emit()
 
     def status_updates(self, status):
+        status_display_changed = False
+        if len(status.keys()) != len(self.status_model.nodes):
+            status_display_changed = True
         self.status_model.new_data(status)
+        if status_display_changed:
+            self.status_view.resizeRowsToContents()
+            self.status_view.resizeColumnsToContents()
+            self.status_view.setColumnWidth(1, 100)
         hz = 1 / (time.time() - self.last_updated)
         self.last_updated = time.time()
 
@@ -81,8 +101,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if table.node:
             if table.node.colname == "RPM" and table.node.rowname == "MAP":
                 table.highlight_point = (
-                    float(self.model.status['sensors.map'].val),
-                    float(self.model.status['rpm'].val))
+                    self.model.status['sensor.map'],
+                    self.model.status['rpm'])
                 table.dataChanged.emit(table.createIndex(0, 0),
                     table.createIndex(15, 15),
                     [Qt.BackgroundRole])
@@ -102,17 +122,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def interrogation_completed(self):
         self.interrogate_status = "completed"
 
-        self.model.dump_to_file("/home/via/dev/viaems-logs/{}.config".format(datetime.isoformat(datetime.now())))
+        self.model.dump_to_file("./logs/{}.config".format(datetime.isoformat(datetime.now())))
         print (self.model.nodes)
 
     def enumeration_completed(self):
         print (self.model.nodes)
         self.status_model._model_changed(self.model)
         self.table_model._model_changed(self.model)
-
-        self.status_view.resizeRowsToContents()
-        self.status_view.resizeColumnsToContents()
-        self.status_view.setColumnWidth(1, 100)
 
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()

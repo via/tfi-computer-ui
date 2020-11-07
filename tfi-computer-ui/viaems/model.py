@@ -25,28 +25,26 @@ class Node():
         return self.val
 
     def set(self, newvalue):
-        self.model.parser.set(None, self.name, newvalue)
+        self.model.parser.set(None, self.path, newvalue)
 
 
-class StatusNode(Node):
-    pass
-
-class ConfigNode(Node):
-    pass
-    
 class TableNode(Node):
 
     def set_point(self, row, col, val):
-        pos = None
+        path = self.path + ["data"]
         if self.naxis == 2:
-            pos = "[{}][{}]".format(row, col)
             self.table[row][col] = val
-            self.table_written[row][col] = True
+#            self.table_written[row][col] = True
+            path.append(row)
+            path.append(col)
         else:
-            pos = "[{}]".format(col)
             self.table[col] = val
-            self.table_written[col] = True
-        self.model.parser.set(None, self.name, {pos: val})
+#            self.table_written[col] = True
+            path.append(row)
+        self.model.parser.set(self.cb, path, float(val))
+
+    def cb(self, *kwargs):
+        print(*kwargs)
 
     def set(self, value):
         if value == {}:
@@ -146,12 +144,36 @@ class Model():
     def start_interrogation(self):
         self.parser.structure(self._handle_structure)
 
+    def _recurse_structure(self, path, resp):
+        if isinstance(resp, list):
+            for i, k in enumerate(resp):
+                self._recurse_structure(path + [i], k)
+        if isinstance(resp, dict):
+            if "_type" in resp.keys():
+                if resp["_type"] == "table":
+                    name = ".".join([str(x) for x in path])
+                    n = TableNode(name=name, path=path, model=self)
+                    self.nodes[name] = n
+                    n.refresh()
+                if resp["_type"] == "uint32" or resp["_type"] == "string" or resp["_type"] == "float":
+                    print(resp)
+                    name = ".".join([str(x) for x in path])
+                    n = Node(name=name, path=path, model=self)
+                    self.nodes[name] = n
+                    n.refresh()
+
+            else:
+                for k, v in resp.items():
+                    self._recurse_structure(path + [k], v)
+
+
     def _handle_structure(self, resp):
-        for name in resp['response']['tables']:
-            n = TableNode(name=name, path=["tables", name], model=self)
-            self.nodes[name] = n
-            n.refresh()
+        self._recurse_structure([], resp['response'])
         self.enumerate_cb()
+        self.parser.ping(self._finish_interrogate)
+
+    def _finish_interrogate(self, bleh):
+        self.interrogate_cb()
 
     def get_node(self, nodename):
         for name, node in self.nodes.items():
@@ -165,8 +187,6 @@ class Model():
     def load_from_file(self, path):
         config = json.load(open(path, "r"))
         for nodename, node in self.nodes.items():
-            if isinstance(node, StatusNode):
-                continue
             if nodename not in config:
                 continue
             if config[nodename] is None:
@@ -176,8 +196,6 @@ class Model():
     def dump_to_file(self, path):
         results = {}
         for nodename, node in self.nodes.items():
-            if isinstance(node, StatusNode):
-                continue
             results[nodename] = node.value()
 
         with open(path, "w") as f:

@@ -14,6 +14,8 @@ class StatusModel(QtCore.QAbstractTableModel):
         self.modelReset.emit()
 
     def new_data(self, nodes={}):
+        if self.nodes.keys() != nodes.keys():
+            self.modelReset.emit()
         self.nodes = nodes
         self.dataChanged.emit(self.createIndex(0, 0),
             self.createIndex(2, len(self.nodes)))
