@@ -146,29 +146,32 @@ class Model():
 
     def _recurse_structure(self, path, resp):
         if isinstance(resp, list):
+            res = []
             for i, k in enumerate(resp):
-                self._recurse_structure(path + [i], k)
+                res += [self._recurse_structure(path + [i], k)]
+            return res
         if isinstance(resp, dict):
             if "_type" in resp.keys():
                 if resp["_type"] == "table":
                     name = ".".join([str(x) for x in path])
                     n = TableNode(name=name, path=path, model=self)
-                    self.nodes[name] = n
                     n.refresh()
+                    return n
                 if resp["_type"] == "uint32" or resp["_type"] == "string" or resp["_type"] == "float":
                     print(resp)
                     name = ".".join([str(x) for x in path])
                     n = Node(name=name, path=path, model=self)
-                    self.nodes[name] = n
                     n.refresh()
-
+                    return n
             else:
+                res = {}
                 for k, v in resp.items():
-                    self._recurse_structure(path + [k], v)
+                    res[k] = self._recurse_structure(path + [k], v)
+                return res
 
 
     def _handle_structure(self, resp):
-        self._recurse_structure([], resp['response'])
+        self.nodes = self._recurse_structure([], resp['response'])
         self.enumerate_cb()
         self.parser.ping(self._finish_interrogate)
 
@@ -194,10 +197,10 @@ class Model():
             node.set(config[nodename])
 
     def dump_to_file(self, path):
-        results = {}
-        for nodename, node in self.nodes.items():
-            results[nodename] = node.value()
+#        results = {}
+#        for nodename, node in self.nodes.items():
+#            results[nodename] = node.value()
 
         with open(path, "w") as f:
-            json.dump(results, f)
+            json.dump(self.nodes, f, default=lambda x: x.value())
 
