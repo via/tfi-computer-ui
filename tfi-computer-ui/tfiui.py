@@ -24,9 +24,7 @@ class TfiUI():
 
         if self.autocal:
             self.autocal.update(nodes)
-        curtime = updates['cputime']
-        rpm = updates['rpm']
-        self.logview.add_data(curtime, rpm)
+        self.logview.add_data(updates['cputime'], updates)
 
     def enumerate_cb(self):
         self.main_window.enumeration_completed()
@@ -38,6 +36,7 @@ class TfiUI():
 
     def __init__(self):
         target = TCPTarget()
+#        target = LogFileTarget("testlog")
         target.start()
         self.last_update = time.time()
 

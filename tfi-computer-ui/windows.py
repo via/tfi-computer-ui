@@ -1,5 +1,5 @@
 from PySide2 import QtWidgets, QtGui
-from PySide2.QtCore import Qt, Signal
+from PySide2.QtCore import Qt, Signal, QPointF
 from PySide2.QtCharts import QtCharts
 
 from models import StatusModel, TableModel, TableEditorModel, TableEditorDelegate
@@ -139,21 +139,112 @@ class LogViewDialog(QtWidgets.QDialog):
         super(LogViewDialog, self).__init__()
 
         layout = QtWidgets.QVBoxLayout(self)
+        self.width = 40000000
+
         chartview = QtCharts.QChartView()
-
-        self.chart = QtCharts.QChart()
         self.rpm_series = QtCharts.QLineSeries()
-        self.chart.addSeries(self.rpm_series)
-        self.chart.createDefaultAxes()
-        self.chart.axisY().setRange(0, 10000)
-
-        chartview.setChart(self.chart)
-
+#        self.rpm_series.setUseOpenGL(True)
+        self.rpm_points = []
+        self.rpm_chart = QtCharts.QChart()
+        self.rpm_chart.addSeries(self.rpm_series)
+        self.rpm_chart.createDefaultAxes()
+        self.rpm_chart.axisY().setRange(0, 8000)
+        self.rpm_chart.axisY().setMinorTickCount(4)
+        self.rpm_chart.axisY().setTickCount(6)
+        self.rpm_chart.axisX().hide()
+        self.rpm_chart.legend().hide()
+        self.rpm_chart.setTitle("RPM")
+        self.rpm_chart.setTheme(QtCharts.QChart.ChartThemeHighContrast)
+        pen = QtGui.QPen(Qt.red)
+        pen.setWidth(4)
+        self.rpm_series.setPen(pen)
+        chartview.setChart(self.rpm_chart)
         layout.addWidget(chartview)
 
-    def add_data(self, time, value):
-        self.rpm_series.append(time, value)
-        self.chart.axisX().setRange(time - 200000, time)
+        chartview = QtCharts.QChartView()
+        self.map_series = QtCharts.QLineSeries()
+#        self.map_series.setUseOpenGL(True)
+        self.map_points = []
+        self.map_chart = QtCharts.QChart()
+        self.map_chart.addSeries(self.map_series)
+        self.map_chart.createDefaultAxes()
+        self.map_chart.axisY().setRange(0, 250)
+        self.map_chart.axisY().setMinorTickCount(4)
+        self.map_chart.axisY().setTickCount(6)
+        self.map_chart.axisX().hide()
+        self.map_chart.legend().hide()
+        self.map_chart.setTitle("MAP")
+        self.map_chart.setTheme(QtCharts.QChart.ChartThemeHighContrast)
+        pen = QtGui.QPen(Qt.darkGreen)
+        pen.setWidth(4)
+        self.map_series.setPen(pen)
+        chartview.setChart(self.map_chart)
+        layout.addWidget(chartview)
+
+        chartview = QtCharts.QChartView()
+        self.ego_series = QtCharts.QLineSeries()
+#        self.ego_series.setUseOpenGL(True)
+        self.ego_points = []
+        self.ego_chart = QtCharts.QChart()
+        self.ego_chart.addSeries(self.ego_series)
+        self.ego_chart.createDefaultAxes()
+        self.ego_chart.axisY().setRange(.6, 1.4)
+        self.ego_chart.axisY().setTickCount(5)
+        self.ego_chart.axisX().hide()
+        self.ego_chart.legend().hide()
+        self.ego_chart.setTitle("EGO")
+        self.ego_chart.setTheme(QtCharts.QChart.ChartThemeHighContrast)
+        pen = QtGui.QPen(Qt.blue)
+        pen.setWidth(4)
+        self.ego_series.setPen(pen)
+        chartview.setChart(self.ego_chart)
+        layout.addWidget(chartview)
+
+        self.last_set_time = 0
+        self.paused = False
+        self.zoomed = False
+
+    def keyPressEvent(self, ev):
+        if ev.key() == Qt.Key.Key_Space and not ev.isAutoRepeat():
+            self.paused = not self.paused
+        if ev.key() == Qt.Key.Key_Z and not ev.isAutoRepeat():
+            self._zoom()
+   
+    def _zoom(self):
+        self.zoomed = not self.zoomed
+        if self.zoomed:
+            self.rpm_chart.axisY().setRange(3000, 7000)
+            self.map_chart.axisY().setRange(120, 220)
+            self.ego_chart.axisY().setRange(.75, 1)
+            self.ego_chart.axisY().setTickCount(6)
+        else:
+            self.rpm_chart.axisY().setRange(0, 8000)
+            self.map_chart.axisY().setRange(0, 250)
+            self.ego_chart.axisY().setRange(.6, 1.4)
+            self.ego_chart.axisY().setTickCount(5)
+
+
+    def add_data(self, timestamp, values):
+        if self.paused:
+            return
+        self.rpm_points.append(QPointF(timestamp, values['rpm']))
+        self.map_points.append(QPointF(timestamp, values['sensor.map']))
+        self.ego_points.append(QPointF(timestamp, values['sensor.ego']))
+        if (timestamp - self.rpm_points[0].x()) % pow(2, 32) > self.width:
+            del self.rpm_points[0]
+            del self.map_points[0]
+            del self.ego_points[0]
+        if time.time() - self.last_set_time > 0.05:
+            self.rpm_series.replace(self.rpm_points)
+            self.map_series.replace(self.map_points)
+            self.ego_series.replace(self.ego_points)
+
+            self.rpm_chart.axisX().setRange(timestamp - self.width, timestamp)
+            self.map_chart.axisX().setRange(timestamp - self.width, timestamp)
+            self.ego_chart.axisX().setRange(timestamp - self.width, timestamp)
+
+            self.last_set_time = time.time()
+        
 
 
 class GaugesDialog(QtWidgets.QDialog):

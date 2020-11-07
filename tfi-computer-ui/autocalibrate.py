@@ -4,7 +4,7 @@ from viaems.model import Model
 import sys
 
 class AutoCalibrate():
-    def __init__(self, vetable, tickrate=4000000, interval=0.5):
+    def __init__(self, vetable, tickrate=4000000, interval=0.25):
         self.data_points = []
         self.tickrate = tickrate
         self.interval = interval
@@ -72,7 +72,7 @@ class AutoCalibrate():
                 rpm_point = i
                 break
         for i, m in enumerate(self.vetable.row_labels):
-            if abs(float(m) - pres) < 3:
+            if abs(float(m) - pres) < 5:
                 map_point = i
                 break
 
@@ -80,10 +80,10 @@ class AutoCalibrate():
             actual = round(old_ve + (new_ve - old_ve) * 0.25, 1)
             print ("rpm = {} map = {}   {} -> {} ({})".format(
                 rpm, pres, old_ve, new_ve, actual))
-            if actual < 3 or actual > 100:
+            if actual < 70 or actual > 130:
                 print("ABORT")
-                sys.exit(1)
-            self.vetable.set_point(map_point, rpm_point, actual)
+            else:
+                self.vetable.set_point(map_point, rpm_point, actual)
         else:
             print("{} / {} not close enough to load point".format(rpm, pres))
 
