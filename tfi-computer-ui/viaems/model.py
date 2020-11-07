@@ -51,38 +51,11 @@ class TableNode(Node):
         if value == {}:
             return
 
-        self.row_labels = value["rowlabels"]
-        self.col_labels = value["collabels"]
-        self.rows = value["rows"]
-        self.cols = value["cols"]
-        self.rowname = value["rowname"]
-        self.colname = value["colname"]
-        self.naxis = value["naxis"]
-        self.table = value["table"]
+        self._from_dict(value)
 
-        self.model.parser.set(None, self.name, {
-            "naxis": self.naxis,
-            "rows": self.rows,
-            "cols": self.cols,
-            })
-        self.model.parser.set(None, self.name, {
-            "collabels": "[" + ",".join(self.col_labels) + "]",
-            "colname": self.colname,
-            })
-        if self.naxis == 1:
-            points = ["[{}]={}".format(col, val) for col, val in enumerate(self.table)]
-            self.model.parser.set(None, self.name, points)
-        else:
-            self.model.parser.set(None, self.name, {
-                "rowname": self.rowname,
-                "rowlabels": "[" + ",".join(self.row_labels) + "]"
-                })
-            for row, data in enumerate(self.table):
-                points = ["[{}][{}]={}".format(row, col, val) for col, val in
-                        enumerate(data)]
-                self.model.parser.set(None, self.name, points)
-
-        
+        def set_cb(req):
+            print(f"Setting {self.path} -> {req}")
+        self.model.parser.set(set_cb, self.path, value)
 
     def get_position_dist(self, row, col, row_v, col_v):
         if self.naxis == 1:
@@ -99,18 +72,21 @@ class TableNode(Node):
         return math.sqrt(math.pow(r_dist, 2) + math.pow(c_dist, 2))
 
 
+    def _from_dict(self, val):
+        self.col_labels = val["horizontal-axis"]['values']
+        self.row_labels = val["vertical-axis"]['values']
+        self.rows = len(self.row_labels)
+        self.cols = len(self.col_labels)
+        self.colname = val["horizontal-axis"]["name"]
+        self.rowname = val["vertical-axis"]["name"]
+        self.naxis = val["num-axis"]
+        self.table = val["data"]
+
     def _refresh_info(self, val):
         if not isinstance(val, dict):
             self.last_refresh = time.time()
             return
-        self.col_labels = val["response"]["horizontal-axis"]['values']
-        self.row_labels = val["response"]["vertical-axis"]['values']
-        self.rows = len(self.row_labels)
-        self.cols = len(self.col_labels)
-        self.colname = val["response"]["horizontal-axis"]["name"]
-        self.rowname = val["response"]["vertical-axis"]["name"]
-        self.naxis = val["response"]["num-axis"]
-        self.table = val["response"]["data"]
+        self._from_dict(val["response"])
 
     def refresh(self):
         self.model.parser.get(self._refresh_info, self.path)
@@ -120,14 +96,16 @@ class TableNode(Node):
         if not hasattr(self, "table"):
             return {}
         return {
-            "rowlabels": self.row_labels,
-            "collabels": self.col_labels,
-            "rows": self.rows,
-            "cols": self.cols,
-            "rowname": self.rowname,
-            "colname": self.colname,
-            "naxis": self.naxis,
-            "table": self.table
+            "horizontal-axis": {
+                "name": self.colname,
+                "values": self.col_labels,
+                },
+            "vertical-axis": {
+                "name": self.rowname,
+                "values": self.row_labels,
+                },
+            "num-axis": self.naxis,
+            "data": self.table,
             }
 
 class Model():

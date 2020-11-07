@@ -62,14 +62,16 @@ class Parser():
             self._finish_command_response(msg)
         elif msg['type'] == 'description':
             self.feed_fields = msg['keys']
+            json.dump(msg, self.logfile)
+            self.logfile.write('\n')
         elif msg['type'] == 'feed':
+            json.dump(msg, self.logfile)
+            self.logfile.write('\n')
             if len(self.feed_fields) == 0:
                 return
             values = msg['values']
             self.status = dict(zip(self.feed_fields, values))
             self.status['parse_error'] = False
-            json.dump(self.status, self.logfile)
-            self.logfile.write('\n')
             if self.data_update_cb:
                 self.data_update_cb(self.status)
 

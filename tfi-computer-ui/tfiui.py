@@ -24,10 +24,9 @@ class TfiUI():
 
         if self.autocal:
             self.autocal.update(nodes)
-#        curtime = self.model.get_node('status.current_time')
-#        rpm = self.model.get_node('status.rpm')
-#        if curtime and rpm:
-#            self.logview.add_data(int(curtime.val), int(rpm.val))
+        curtime = updates['cputime']
+        rpm = updates['rpm']
+        self.logview.add_data(curtime, rpm)
 
     def enumerate_cb(self):
         self.main_window.enumeration_completed()
@@ -42,9 +41,9 @@ class TfiUI():
         target.start()
         self.last_update = time.time()
 
-#        self.logview = LogViewDialog()
-#        self.logview.show()
-#        self.logview.adjustSize()
+        self.logview = LogViewDialog()
+        self.logview.show()
+        self.logview.adjustSize()
 
         self.gauge_dialog = GaugesDialog()
         self.gauge_dialog.show()
