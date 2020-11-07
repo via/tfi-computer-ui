@@ -157,7 +157,8 @@ class Model():
                     n = TableNode(name=name, path=path, model=self)
                     n.refresh()
                     return n
-                if resp["_type"] == "uint32" or resp["_type"] == "string" or resp["_type"] == "float":
+                else:
+#                if resp["_type"] == "uint32" or resp["_type"] == "string" or resp["_type"] == "float":
                     print(resp)
                     name = ".".join([str(x) for x in path])
                     n = Node(name=name, path=path, model=self)

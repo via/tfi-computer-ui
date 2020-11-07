@@ -71,8 +71,8 @@ class TableModel(QtCore.QAbstractTableModel):
 
     def _model_changed(self, model):
         self.nodes = []
-        for n in sorted(model.nodes):
-            node = model.nodes[n]
+        for n in sorted(model.nodes['tables']):
+            node = model.nodes['tables'][n]
             if isinstance(node, TableNode):
                 self.nodes.append(node)
         self.modelReset.emit()
