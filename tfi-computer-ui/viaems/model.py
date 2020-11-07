@@ -25,8 +25,9 @@ class Node():
         return self.val
 
     def set(self, newvalue):
-        self.model.parser.set(None, self.path, newvalue)
-
+        def set_cb(req):
+            print(f"Setting {self.path} -> {req}")
+        self.model.parser.set(set_cb, self.path, newvalue)
 
 class TableNode(Node):
 
@@ -41,10 +42,10 @@ class TableNode(Node):
             self.table[col] = val
 #            self.table_written[col] = True
             path.append(row)
-        self.model.parser.set(self.cb, path, float(val))
+        def set_cb(req):
+            print(f"Setting {path} -> {req}")
+        self.model.parser.set(set_cb, path, float(val))
 
-    def cb(self, *kwargs):
-        print(*kwargs)
 
     def set(self, value):
         if value == {}:
@@ -188,19 +189,23 @@ class Model():
         self.status = data
         self.update_cb(data)
 
+    def _recurse_config_load(self, fileconf, targetconf):
+        if isinstance(targetconf, Node):
+            targetconf.set(fileconf)
+        elif isinstance(targetconf, dict):
+            for k, v in targetconf.items():
+                if k in fileconf:
+                    self._recurse_config_load(fileconf[k], targetconf[k])
+        elif isinstance(targetconf, list):
+            for i, v in enumerate(targetconf):
+                if i <= len(fileconf):
+                    self._recurse_config_load(fileconf[i], targetconf[i])
+
     def load_from_file(self, path):
         config = json.load(open(path, "r"))
-        for nodename, node in self.nodes.items():
-            if nodename not in config:
-                continue
-            if config[nodename] is None:
-                continue
-            node.set(config[nodename])
+        self._recurse_config_load(config, self.nodes)
 
     def dump_to_file(self, path):
-#        results = {}
-#        for nodename, node in self.nodes.items():
-#            results[nodename] = node.value()
 
         with open(path, "w") as f:
             json.dump(self.nodes, f, default=lambda x: x.value())
